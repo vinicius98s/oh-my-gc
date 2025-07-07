@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Tomorrow";
+  src: url("assets/fonts/Tomorrow-Regular.ttf");
+}
+
+@theme {
+  --color-gray: #303438;
+  --color-light-gray: #4c5a6e;
+  --color-dark-blue: #283548;
+  --color-blue: #468aec;
+  --color-light-blue: #82c1f7;
+}
+
+* {
+  font-family: "Tomorrow", sans-serif;
+  @apply text-white;
+}
+
+body {
+  @apply bg-gray px-16;
+}
