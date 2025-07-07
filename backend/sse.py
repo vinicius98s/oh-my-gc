@@ -22,8 +22,6 @@ class SSEBroadcaster:
         with self.lock:
             for q in self.listeners:
                 try:
-                    with q.mutex:
-                        q.queue.clear()
                     q.put_nowait(message)
                 except queue.Full:
                     pass

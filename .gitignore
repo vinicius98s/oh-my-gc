@@ -96,5 +96,6 @@ backend/build/
 backend/dist/
 backend/venv/
 backend/env/
-backend/.venv
+backend/.venv/
+backend/data/screenshot.png
 

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 
 import {
@@ -51,8 +51,10 @@ export function DataContextProvider({
 
   const url = `http://localhost:${port}`;
 
+  const queryClient = useQueryClient();
+
   const { data: trackedCharacters } = useQuery<TrackedCharactersResponse>({
-    queryKey: ["tracked_characters"],
+    queryKey: ["tracked_characters1"],
     queryFn: () => getTrackedCharacters(url),
   });
 
@@ -73,8 +75,13 @@ export function DataContextProvider({
   useEffect(() => {
     if (port) {
       const evtSource = new EventSource(`${url}/events`);
+
       evtSource.addEventListener("character", (e: MessageEvent) => {
         setPlayingCharacter(getCharacterById(e.data));
+      });
+
+      evtSource.addEventListener("dungeon_completed", (e: MessageEvent) => {
+        queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
       });
     }
   }, [port]);
