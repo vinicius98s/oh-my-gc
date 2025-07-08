@@ -41,6 +41,8 @@ const createWindow = () => {
     },
   });
 
+  mainWindow.setResizable(false);
+
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   ipcMain.handle("get-port", () => port);

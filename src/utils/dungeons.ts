@@ -18,7 +18,15 @@ function getDungeonImage(id: number) {
   }[id];
 }
 
-function getDungeonDisplayName(id: number) {
+export function getDungeonDisplayName(id: number | string) {
+  if (typeof id === "string") {
+    return {
+      "the-crucible": "The Crucible",
+      "sanctum-of-destruction": "Sanctum of Destruction",
+      "wizards-labyrinth": "Wizard's Labyrinth",
+    }[id];
+  }
+
   return {
     1: "The Crucible",
     2: "Sanctum of Destruction",
@@ -42,13 +50,14 @@ export function formatDungeons(
   dungeonsEntries: DungeonsEntriesResponse,
   trackedCharactersCount: number,
 ) {
-  return dungeons.map(({ id, name, weekly_entry_limit }) => ({
+  return dungeons.map(({ id, name, weekly_entry_limit, characters_entries }) => ({
     id,
     name,
     displayName: getDungeonDisplayName(id),
     image: getDungeonImage(id),
     weeklyEntryLimit: weekly_entry_limit,
     totalCharactersEntries: weekly_entry_limit * trackedCharactersCount,
+    charactersEntries: characters_entries,
     allCharactersEntries: dungeonsEntries.filter(
       ({ dungeon_id }) => dungeon_id === id,
     ).length,
@@ -59,6 +68,10 @@ export type DungeonsResponse = {
   id: number;
   name: string;
   weekly_entry_limit: number;
+  characters_entries: {
+    entries_count: number;
+    character_id: number;
+  }[];
 }[];
 
 export async function getDungeons(baseUrl: string) {

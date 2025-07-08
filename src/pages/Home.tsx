@@ -1,9 +1,10 @@
 import { useDataContext } from "../DataContext";
 
 import DungeonsList from "../components/DungeonsList";
+import { getDungeonDisplayName } from "../utils/dungeons";
 
 export default function Home() {
-  const { playingCharacter } = useDataContext();
+  const { playingCharacter, playingDungeon } = useDataContext();
 
   if (!playingCharacter) {
     return (
@@ -15,11 +16,7 @@ export default function Home() {
 
   return (
     <div className="mt-10">
-      <p className="text-sm">Game status:</p>
-      <div className="flex gap-2 items-center mb-6 mt-2">
-        <div className="size-2 bg-green-500 rounded-full" />
-        <p className="text-md font-semibold">Connected</p>
-      </div>
+      <p className="text-md font-semibold mb-4">Game status</p>
 
       <div className="flex gap-4">
         <img
@@ -31,6 +28,9 @@ export default function Home() {
           <p className="text-lg font-semibold">
             {playingCharacter.displayName}
           </p>
+          {playingDungeon ? (
+            <p className="text-sm">{getDungeonDisplayName(playingDungeon)}</p>
+          ) : null}
         </div>
       </div>
 

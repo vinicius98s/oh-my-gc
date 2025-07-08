@@ -19,6 +19,7 @@ type DataContextType = {
   dungeons: DungeonsResponse;
   dungeonsEntries: DungeonsEntriesResponse;
   playingCharacter: Character | null;
+  playingDungeon: string | null;
   url: string;
 };
 
@@ -27,6 +28,7 @@ const DataContext = createContext<DataContextType>({
   dungeons: [],
   dungeonsEntries: [],
   playingCharacter: null,
+  playingDungeon: null,
   url: "",
 });
 
@@ -45,6 +47,7 @@ export function DataContextProvider({
   children: React.ReactNode;
 }) {
   const [port, setPort] = useState<number>();
+  const [playingDungeon, setPlayingDungeon] = useState<string | null>(null);
   const [playingCharacter, setPlayingCharacter] = useState<Character | null>(
     null,
   );
@@ -53,15 +56,16 @@ export function DataContextProvider({
 
   const queryClient = useQueryClient();
 
-  const { data: trackedCharacters } = useQuery<TrackedCharactersResponse>({
-    queryKey: ["tracked_characters1"],
-    queryFn: () => getTrackedCharacters(url),
-  });
-
   const { data: dungeons } = useQuery<DungeonsResponse>({
     queryKey: ["dungeons"],
     queryFn: () => getDungeons(url),
   });
+
+  const { data: trackedCharacters } = useQuery<TrackedCharactersResponse>({
+    queryKey: ["tracked_characters"],
+    queryFn: () => getTrackedCharacters(url),
+  });
+
 
   const { data: dungeonsEntries } = useQuery<DungeonsEntriesResponse>({
     queryKey: ["dungeons_entries"],
@@ -80,8 +84,18 @@ export function DataContextProvider({
         setPlayingCharacter(getCharacterById(e.data));
       });
 
-      evtSource.addEventListener("dungeon_completed", (e: MessageEvent) => {
-        queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
+      evtSource.addEventListener("dungeons", (e: MessageEvent) => {
+        const { type, dungeon } = JSON.parse(e.data.replaceAll("'", "\""));
+        switch (type) {
+          case "start":
+            setPlayingDungeon(dungeon);
+            break;
+
+          case "completed":
+            setPlayingDungeon(null);
+            queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
+            break;
+        }
       });
     }
   }, [port]);
@@ -102,6 +116,7 @@ export function DataContextProvider({
         url,
         dungeons,
         dungeonsEntries,
+        playingDungeon,
       }}
     >
       {children}

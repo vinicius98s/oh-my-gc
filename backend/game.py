@@ -7,7 +7,11 @@ import cv2
 import mss
 
 # TODO: figure this out when app is bundled
-pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+# pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+
+# TEMPLATES_BASE_PATH = "C:\\Users\\vinic\\oh-my-gc\\backend\\data\\templates"
+TEMPLATES_BASE_PATH = "/home/vinicius/p/oh-my-gc/backend/data/templates"
+
 
 class GameState:
     def __init__(self, character, img, DB):
@@ -54,7 +58,8 @@ class GameState:
     def match_playing_character(self):
         templates = []
 
-        templates_path = "C:\\Users\\vinic\\oh-my-gc\\backend\\data\\templates\\characters\\in-game"
+        templates_path = f"{TEMPLATES_BASE_PATH}/characters/in-game"
+        # templates_path = f"{TEMPLATES_BASE_PATH}\\characters\\in-game"
         for (dirpath, dirnames, filenames) in walk(templates_path):
             for filename in filenames:
                 character_name = filename.replace(".png", "")
@@ -88,7 +93,8 @@ class GameState:
         if self.match_playing_character() is None:
             templates = []
 
-            templates_path = "C:\\Users\\vinic\\oh-my-gc\\backend\\data\\templates\\dungeons"
+            templates_path = f"{TEMPLATES_BASE_PATH}/dungeons"
+            # templates_path = f"{TEMPLATES_BASE_PATH}\\dungeons"
             for (dirpath, dirnames, filenames) in walk(templates_path):
                 for filename in filenames:
                     character_name = filename.replace(".png", "")
@@ -141,7 +147,8 @@ class GameState:
     def match_lobby_character(self):
         templates = []
 
-        templates_path = "C:\\Users\\vinic\\oh-my-gc\\backend\\data\\templates\\characters"
+        templates_path = f"{TEMPLATES_BASE_PATH}/characters"
+        # templates_path = "{TEMPLATES_BASE_PATH}\\characters"
         for (dirpath, dirnames, filenames) in walk(templates_path):
             for filename in filenames:
                 character_name = filename.replace(".png", "")

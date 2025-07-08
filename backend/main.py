@@ -26,7 +26,7 @@ def game_loop():
             break
 
         with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
-            title = "GrandChase v.1.71.23 x64"
+            title = "DESKTOP-ASIBELB - Google Chrome"
             window = game.get_window(title)
             if window is None:
                 print("[game_loop]: Game window not found")
@@ -34,23 +34,29 @@ def game_loop():
 
             img = game.take_screenshot(window, f"{args.data}/screenshot.png")
             game_state = GameState(last_character_id, img, DB)
+
             game_state.match_lobby_character()
             if game_state.character is not None:
                 last_character_id = game_state.character
 
-            if not game_state.is_playing:
-                entry_id = game_state.match_loading_dungeon(last_character_id)
-                if entry_id:
-                    dungeon_entry_id = entry_id
+            entry_id = game_state.match_loading_dungeon(last_character_id)
+            if entry_id:
+                dungeon_entry_id = entry_id
 
-            if game_state.is_playing:
-                game_state.match_playing_character()
-                completed = game_state.match_completed_dungeon(dungeon_entry_id)
-                if completed:
-                    broadcaster.broadcast(
-                        event="dungeon_completed",
-                        data={"character_id": game_state.character, "dungeon_entry_id": dungeon_entry_id}
-                    )
+            if game_state.dungeon:
+                broadcaster.broadcast(
+                    event="dungeons",
+                    data={"type": "start", "dungeon": game_state.dungeon}
+                )
+
+            game_state.match_playing_character()
+            completed = game_state.match_completed_dungeon(dungeon_entry_id)
+            if completed:
+                broadcaster.broadcast(
+                    event="dungeons",
+                    data={"type": "completed",
+                          "dungeon_entry_id": dungeon_entry_id}
+                )
 
             broadcaster.broadcast(
                 event="character",
@@ -125,7 +131,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
                     cursor = DB.cursor()
                     count = cursor.execute(
-                        "SELECT count(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ?",
+                        "SELECT count(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND started_at >= date('now', '-7 days', 'weekday 3')",
                         (dungeon_id, character_id)).fetchone()[0]
 
                     if value > count:
@@ -137,7 +143,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     else:
                         diff = count - value
                         ids = cursor.execute(
-                            "SELECT id FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ?",
+                            "SELECT id FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND started_at >= date('now', '-7 days', 'weekday 3')",
                             (dungeon_id, character_id)
                         ).fetchall()
 
@@ -187,13 +193,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
                     cursor = DB.cursor()
                     rows = cursor.execute("SELECT * FROM dungeons").fetchall()
-                    response = [{
-                        "id": row[0],
-                        "name": row[1],
-                        "weekly_entry_limit": row[2]
-                    } for row in rows]
+                    response = []
+                    for row in rows:
+                        id = row[0]
+                        entries_rows = cursor.execute(
+                            "SELECT COUNT(de.id) AS entry_count, c.id AS character_id FROM characters c LEFT JOIN dungeons_entries de ON c.id = de.character_id AND de.dungeon_id = ? AND de.started_at >= date('now', '-7 days', 'weekday 3') WHERE c.tracking = TRUE GROUP BY c.id",
+                            (id,)).fetchall()
+                        characters_entries = [{
+                            "entries_count": row[0],
+                            "character_id": row[1],
+                        } for row in entries_rows]
+                        response.append({
+                            "id": id,
+                            "name": row[1],
+                            "weekly_entry_limit": row[2],
+                            "characters_entries": characters_entries
+                        })
                     self.wfile.write(json.dumps({"data": response}).encode())
             except Exception as e:
+                print(e)
                 self.send_error(500, f"Server Error: {e}")
 
         elif self.path == "/dungeons_entries":
@@ -206,7 +224,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
                     cursor = DB.cursor()
                     rows = cursor.execute(
-                        "SELECT * FROM dungeons_entries").fetchall()
+                        "SELECT * FROM dungeons_entries WHERE started_at >= date('now', '-7 days', 'weekday 3')").fetchall()
                     response = [{
                         "id": row[0],
                         "dungeon_id": row[1],

@@ -11,6 +11,16 @@
   --color-dark-blue: #283548;
   --color-blue: #468aec;
   --color-light-blue: #82c1f7;
+
+  --animate-playing: playing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  @keyframes playing {
+    0%, 100% {
+      outline-color: color-mix(in oklab, var(--color-green-400) /* oklch(79.2% 0.209 151.711) = #05df72 */ 10%, transparent);
+    }
+    50% {
+      outline-color: var(--color-green-400);
+    }
+  }
 }
 
 * {
@@ -21,3 +31,4 @@
 body {
   @apply bg-gray px-16;
 }
+

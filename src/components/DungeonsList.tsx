@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Button from "./Button";
 import NumberInput from "./NumberInput";
+import AllCharactersEntries from "./AllCharactersEntries";
 
 import { useDataContext } from "../DataContext";
 import { formatDungeons, getCharacterDungeonEntries } from "../utils/dungeons";
@@ -18,7 +19,7 @@ export default function DungeonsList({ playingCharacterId }: Props) {
 
   const queryClient = useQueryClient();
 
-  const { dungeons, dungeonsEntries, trackedCharacters, url } =
+  const { dungeons, dungeonsEntries, trackedCharacters, url, playingDungeon } =
     useDataContext();
 
   const mutation = useMutation({
@@ -59,7 +60,7 @@ export default function DungeonsList({ playingCharacterId }: Props) {
 
           return (
             <div
-              className="border-1 border-white/10 rounded-md p-4 bg-[#3D4247] w-fit"
+              className={`${dungeon.name === playingDungeon ? "animate-playing" : "outline-transparent"} outline-2 border-1 border-white/10 rounded-md p-4 bg-[#3D4247] w-fit`}
               key={dungeon.id}
             >
               <div className="relative mb-4">
@@ -106,10 +107,12 @@ export default function DungeonsList({ playingCharacterId }: Props) {
                   </div>
                 )}
 
-                <p className="text-sm mt-1">
-                  {dungeon.allCharactersEntries}/
-                  {dungeon.totalCharactersEntries}
-                </p>
+                <AllCharactersEntries
+                  charactersEntries={dungeon.charactersEntries}
+                  allCharactersEntries={dungeon.allCharactersEntries}
+                  totalCharactersEntries={dungeon.totalCharactersEntries}
+                  weeklyEntryLimit={dungeon.weeklyEntryLimit}
+                />
               </div>
             </div>
           );
