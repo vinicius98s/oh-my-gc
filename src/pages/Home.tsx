@@ -8,8 +8,8 @@ export default function Home() {
 
   if (!playingCharacter) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        Not playing
+      <div className="h-screen flex items-center justify-center text-center">
+        Could not find any playing character.<br />Make sure to have the game open and running.
       </div>
     );
   }
@@ -28,9 +28,9 @@ export default function Home() {
           <p className="text-lg font-semibold">
             {playingCharacter.displayName}
           </p>
-          {playingDungeon ? (
-            <p className="text-sm">{getDungeonDisplayName(playingDungeon)}</p>
-          ) : null}
+          <p className="text-sm">
+            {playingDungeon ? getDungeonDisplayName(playingDungeon) : null}
+          </p>
         </div>
       </div>
 

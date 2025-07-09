@@ -42,13 +42,15 @@ export default function NumberInput({
       />
       <div className="flex flex-col border-l border-blue">
         <button
-          className="flex-1 px-2 cursor-pointer hover:bg-dark-blue"
+          className="flex-1 px-2 cursor-pointer hover:bg-dark-blue disabled:opacity-50 hover:disabled:bg-transparent disabled:cursor-default"
+          disabled={value === max}
           onClick={increment}
         >
           <ChevronUp className="w-3 h-3 text-blue" />
         </button>
         <button
-          className="flex-1 px-2 cursor-pointer hover:bg-dark-blue"
+          className="flex-1 px-2 cursor-pointer hover:bg-dark-blue disabled:opacity-50 hover:disabled:bg-transparent disabled:cursor-default"
+          disabled={value === min}
           onClick={decrement}
         >
           <ChevronDown className="w-3 h-3 text-blue" />

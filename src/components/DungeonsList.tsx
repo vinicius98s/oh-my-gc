@@ -63,7 +63,7 @@ export default function DungeonsList({ playingCharacterId }: Props) {
               className={`${dungeon.name === playingDungeon ? "animate-playing" : "outline-transparent"} outline-2 border-1 border-white/10 rounded-md p-4 bg-[#3D4247] w-fit`}
               key={dungeon.id}
             >
-              <div className="relative mb-4">
+              <div className="relative">
                 <img src={dungeon.image} />
                 <Button
                   className={`${dungeon.id === 2 ? "px-1 text-xs" : "px-0.5 text-sm"} from-[#0A2A48] to-[#1D78CE] outline-[#CAD8EB]/60 outline-offset-0 py-0.5 rounded-full absolute bottom-0 w-full font-medium cursor-default`}
@@ -72,40 +72,47 @@ export default function DungeonsList({ playingCharacterId }: Props) {
                 </Button>
               </div>
 
-              <div className="flex flex-col justify-center items-center">
-                {isEditing === dungeon.id ? (
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <button
-                      className="cursor-pointer py-1"
-                      onClick={() => setIsEditing(null)}
+              <div>
+                <div className="flex justify-center items-center h-14">
+                  {isEditing === dungeon.id ? (
+                    <div className="flex items-center gap-2">
+                      <span title="Cancel">
+                        <button
+                          className="cursor-pointer py-1"
+                          onClick={() => setIsEditing(null)}
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </span>
+                      <NumberInput
+                        defaultValue={currentCharacterDungeonEntries}
+                        min={0}
+                        max={dungeon.weeklyEntryLimit}
+                        onChangeValue={setEditedValue}
+                      />
+                      <span title="Save">
+                        <button
+                          className="cursor-pointer py-1 disabled:opacity-50 disabled:cursor-default"
+                          onClick={() => onEditEntries(dungeon.id)}
+                          disabled={editedValue === currentCharacterDungeonEntries || editedValue === null}
+                        >
+                          <Check className="size-4" />
+                        </button>
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      className="flex gap-2 items-center cursor-pointer mt-1"
+                      onClick={() => setIsEditing(dungeon.id)}
                     >
-                      <X className="size-4" />
-                    </button>
-                    <NumberInput
-                      defaultValue={currentCharacterDungeonEntries}
-                      min={0}
-                      max={dungeon.weeklyEntryLimit}
-                      onChangeValue={setEditedValue}
-                    />
-                    <button
-                      className="cursor-pointer py-1"
-                      onClick={() => onEditEntries(dungeon.id)}
-                    >
-                      <Check className="size-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    className="flex mb-3 gap-2 items-center cursor-pointer"
-                    onClick={() => setIsEditing(dungeon.id)}
-                  >
-                    <Pencil className="size-4 -ml-6 -mt-0.5" />
-                    <p>
-                      {currentCharacterDungeonEntries}/
-                      {dungeon.weeklyEntryLimit}
-                    </p>
-                  </div>
-                )}
+                      <Pencil className="size-4 -ml-2 -mt-0.5" />
+                      <p>
+                        {currentCharacterDungeonEntries}/
+                        {dungeon.weeklyEntryLimit}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 <AllCharactersEntries
                   charactersEntries={dungeon.charactersEntries}

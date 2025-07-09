@@ -91,6 +91,10 @@ export function DataContextProvider({
             setPlayingDungeon(dungeon);
             break;
 
+          case "not_playing":
+            setPlayingDungeon(null);
+            break;
+
           case "completed":
             setPlayingDungeon(null);
             queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });

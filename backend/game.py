@@ -14,12 +14,13 @@ TEMPLATES_BASE_PATH = "/home/vinicius/p/oh-my-gc/backend/data/templates"
 
 
 class GameState:
-    def __init__(self, character, img, DB):
+    def __init__(self, character, img, DB, broadcaster):
         self.img = img
         self.character = character
         self.dungeon = None
         self.is_playing = False
         self.DB = DB
+        self.broadcaster = broadcaster
 
     def __str__(self):
         return f"GameState(\n\tcharacter={self.character}, \n\tdungeon={self.dungeon}, \n\tis_playing={self.is_playing}\n)"
@@ -52,6 +53,10 @@ class GameState:
                     "UPDATE dungeons_entries SET finished_at = CURRENT_TIMESTAMP, character_id = ? WHERE id = ?",
                     (self.character, entry_id))
                 self.DB.commit()
+                self.broadcaster.broadcast(
+                    event="dungeons",
+                    data={"type": "completed", "dungeon_entry_id": entry_id}
+                )
                 self.is_playing = False
                 return True
 
@@ -139,6 +144,10 @@ class GameState:
                     (dungeon_id, character_id)
                 ).fetchone()[0]
                 self.DB.commit()
+                self.broadcaster.broadcast(
+                    event="dungeons",
+                    data={"type": "start", "dungeon": dungeon}
+                )
 
                 self.dungeon = dungeon
                 self.is_playing = True
@@ -174,6 +183,10 @@ class GameState:
             character_id = cursor.execute(
                 "SELECT id FROM characters WHERE name = ?",
                 (character,)).fetchone()[0]
+            self.broadcaster.broadcast(
+                event="dungeons",
+                data={"type": "not_playing"}
+            )
             self.character = character_id
             self.is_playing = False
             self.dungeon = None

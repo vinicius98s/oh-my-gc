@@ -29,6 +29,6 @@
 }
 
 body {
-  @apply bg-gray px-16;
+  @apply bg-gray overflow-hidden;
 }
 

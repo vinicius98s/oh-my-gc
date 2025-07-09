@@ -33,7 +33,7 @@ def game_loop():
                 continue
 
             img = game.take_screenshot(window, f"{args.data}/screenshot.png")
-            game_state = GameState(last_character_id, img, DB)
+            game_state = GameState(last_character_id, img, DB, broadcaster)
 
             game_state.match_lobby_character()
             if game_state.character is not None:
@@ -43,20 +43,8 @@ def game_loop():
             if entry_id:
                 dungeon_entry_id = entry_id
 
-            if game_state.dungeon:
-                broadcaster.broadcast(
-                    event="dungeons",
-                    data={"type": "start", "dungeon": game_state.dungeon}
-                )
-
             game_state.match_playing_character()
-            completed = game_state.match_completed_dungeon(dungeon_entry_id)
-            if completed:
-                broadcaster.broadcast(
-                    event="dungeons",
-                    data={"type": "completed",
-                          "dungeon_entry_id": dungeon_entry_id}
-                )
+            game_state.match_completed_dungeon(dungeon_entry_id)
 
             broadcaster.broadcast(
                 event="character",
@@ -131,7 +119,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
                     cursor = DB.cursor()
                     count = cursor.execute(
-                        "SELECT count(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND started_at >= date('now', '-7 days', 'weekday 3')",
+                        "SELECT count(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND started_at >= date('now', 'weekday 3') AND started_at < date('now', 'weekday 3', '+7 days')",
                         (dungeon_id, character_id)).fetchone()[0]
 
                     if value > count:
@@ -143,7 +131,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     else:
                         diff = count - value
                         ids = cursor.execute(
-                            "SELECT id FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND started_at >= date('now', '-7 days', 'weekday 3')",
+                            "SELECT id FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND started_at >= date('now', 'weekday 3') AND started_at < date('now', 'weekday 3', '+7 days')",
                             (dungeon_id, character_id)
                         ).fetchall()
 
@@ -197,7 +185,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     for row in rows:
                         id = row[0]
                         entries_rows = cursor.execute(
-                            "SELECT COUNT(de.id) AS entry_count, c.id AS character_id FROM characters c LEFT JOIN dungeons_entries de ON c.id = de.character_id AND de.dungeon_id = ? AND de.started_at >= date('now', '-7 days', 'weekday 3') WHERE c.tracking = TRUE GROUP BY c.id",
+                            "SELECT COUNT(de.id) AS entry_count, c.id AS character_id FROM characters c LEFT JOIN dungeons_entries de ON c.id = de.character_id AND de.dungeon_id = ? AND de.started_at >= date('now', 'weekday 3') AND de.started_at < date('now', 'weekday 3', '+7 days') WHERE c.tracking = TRUE GROUP BY c.id",
                             (id,)).fetchall()
                         characters_entries = [{
                             "entries_count": row[0],
@@ -224,7 +212,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
                     cursor = DB.cursor()
                     rows = cursor.execute(
-                        "SELECT * FROM dungeons_entries WHERE started_at >= date('now', '-7 days', 'weekday 3')").fetchall()
+                        "SELECT * FROM dungeons_entries WHERE started_at >= date('now', 'weekday 3') AND started_at < date('now', 'weekday 3', '+7 days')").fetchall()
                     response = [{
                         "id": row[0],
                         "dungeon_id": row[1],

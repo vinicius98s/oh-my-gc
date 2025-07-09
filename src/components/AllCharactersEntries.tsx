@@ -35,7 +35,7 @@ export default function AllCharactersEntries(props: Props) {
                 <span key={character.id} title={`${character.displayName}: ${entries_count}/${props.weeklyEntryLimit}`}>
                   <img
                     src={character.image}
-                    className={`${done ? "outline-green-300 opacity-20" : ""} outline-1 h-7 rounded`}
+                    className={`${done ? "opacity-20" : ""} h-7 rounded`}
                   />
                 </span>
               )

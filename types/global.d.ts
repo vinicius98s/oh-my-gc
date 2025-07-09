@@ -5,5 +5,10 @@ declare global {
     api: {
       getPort: () => Promise<number>;
     };
+    electron: {
+      minimizeWindow: () => void;
+      maximizeWindow: () => void;
+      closeWindow: () => void;
+    };
   }
 }

@@ -36,6 +36,7 @@ const createWindow = () => {
   const mainWindow = new BrowserWindow({
     height: 600,
     width: 800,
+    frame: false,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
@@ -46,6 +47,22 @@ const createWindow = () => {
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   ipcMain.handle("get-port", () => port);
+
+  ipcMain.on("minimize-window", () => {
+    mainWindow.minimize();
+  });
+
+  ipcMain.on("maximize-window", () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  });
+
+  ipcMain.on("close-window", () => {
+    mainWindow.close();
+  });
 
   mainWindow.webContents.session.webRequest.onHeadersReceived(
     (details, callback) => {
