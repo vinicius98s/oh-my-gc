@@ -28,7 +28,7 @@ export default function Home() {
           <p className="text-lg font-semibold">
             {playingCharacter.displayName}
           </p>
-          <p className="text-sm">
+          <p className="text-sm h-6">
             {playingDungeon ? getDungeonDisplayName(playingDungeon) : null}
           </p>
         </div>

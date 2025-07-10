@@ -1,16 +1,16 @@
-from os import walk
 from rapidfuzz import fuzz
+import os
 import pytesseract
-import pywinctl as pwc
-import numpy as np
 import cv2
 import mss
+import pywinctl as pwc
+import numpy as np
 
 # TODO: figure this out when app is bundled
-# pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
 
-# TEMPLATES_BASE_PATH = "C:\\Users\\vinic\\oh-my-gc\\backend\\data\\templates"
-TEMPLATES_BASE_PATH = "/home/vinicius/p/oh-my-gc/backend/data/templates"
+
+TEMPLATES_BASE_PATH = os.path.join(os.curdir, "data", "templates")
 
 
 class GameState:
@@ -63,9 +63,8 @@ class GameState:
     def match_playing_character(self):
         templates = []
 
-        templates_path = f"{TEMPLATES_BASE_PATH}/characters/in-game"
-        # templates_path = f"{TEMPLATES_BASE_PATH}\\characters\\in-game"
-        for (dirpath, dirnames, filenames) in walk(templates_path):
+        templates_path = os.path.join(TEMPLATES_BASE_PATH, "characters", "in-game")
+        for (dirpath, dirnames, filenames) in os.walk(templates_path):
             for filename in filenames:
                 character_name = filename.replace(".png", "")
                 templates.append(
@@ -98,9 +97,8 @@ class GameState:
         if self.match_playing_character() is None:
             templates = []
 
-            templates_path = f"{TEMPLATES_BASE_PATH}/dungeons"
-            # templates_path = f"{TEMPLATES_BASE_PATH}\\dungeons"
-            for (dirpath, dirnames, filenames) in walk(templates_path):
+            templates_path = os.path.join(TEMPLATES_BASE_PATH, "dungeons")
+            for (dirpath, dirnames, filenames) in os.walk(templates_path):
                 for filename in filenames:
                     character_name = filename.replace(".png", "")
                     templates.append(
@@ -156,9 +154,8 @@ class GameState:
     def match_lobby_character(self):
         templates = []
 
-        templates_path = f"{TEMPLATES_BASE_PATH}/characters"
-        # templates_path = "{TEMPLATES_BASE_PATH}\\characters"
-        for (dirpath, dirnames, filenames) in walk(templates_path):
+        templates_path = os.path.join(TEMPLATES_BASE_PATH, "characters")
+        for (dirpath, dirnames, filenames) in os.walk(templates_path):
             for filename in filenames:
                 character_name = filename.replace(".png", "")
                 templates.append(

@@ -105,7 +105,7 @@ export default function DungeonsList({ playingCharacterId }: Props) {
                       className="flex gap-2 items-center cursor-pointer mt-1"
                       onClick={() => setIsEditing(dungeon.id)}
                     >
-                      <Pencil className="size-4 -ml-2 -mt-0.5" />
+                      <Pencil className="size-4 -ml-2" />
                       <p>
                         {currentCharacterDungeonEntries}/
                         {dungeon.weeklyEntryLimit}
