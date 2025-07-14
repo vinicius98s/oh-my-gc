@@ -7,10 +7,34 @@ import pywinctl as pwc
 import numpy as np
 
 # TODO: figure this out when app is bundled
-pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+# pytesseract.pytesseract.tesseract_cmd = "C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 TEMPLATES_BASE_PATH = os.path.join(os.curdir, "data", "templates")
+
+
+def load_templates(path, gray=False):
+    templates = []
+    for (dirpath, dirnames, filenames) in os.walk(path):
+        for filename in filenames:
+            character_name = filename.replace(".png", "")
+            if gray:
+                templates.append(
+                    (character_name, cv2.imread(
+                        f"{path}/{filename}", cv2.IMREAD_GRAYSCALE))
+                )
+            else:
+                templates.append(
+                    (character_name, cv2.imread(f"{path}/{filename}")))
+    return templates
+
+
+LOBBY_CHARACTER_TEMPLATES = load_templates(
+    os.path.join(TEMPLATES_BASE_PATH, "characters"))
+INGAME_CHARACTER_TEMPLATES = load_templates(
+    os.path.join(TEMPLATES_BASE_PATH, "characters", "in-game"))
+DUNGEON_TEMPLATES = load_templates(
+    os.path.join(TEMPLATES_BASE_PATH, "dungeons"), gray=True)
 
 
 class GameState:
@@ -49,9 +73,12 @@ class GameState:
                 match >= 80
             ):
                 cursor = self.DB.cursor()
-                cursor.execute(
-                    "UPDATE dungeons_entries SET finished_at = CURRENT_TIMESTAMP, character_id = ? WHERE id = ?",
-                    (self.character, entry_id))
+                update = """
+                    UPDATE dungeons_entries
+                    SET finished_at = CURRENT_TIMESTAMP, character_id = ?
+                    WHERE id = ?
+                """
+                cursor.execute(update, (self.character, entry_id))
                 self.DB.commit()
                 self.broadcaster.broadcast(
                     event="dungeons",
@@ -61,21 +88,12 @@ class GameState:
                 return True
 
     def match_playing_character(self):
-        templates = []
-
-        templates_path = os.path.join(TEMPLATES_BASE_PATH, "characters", "in-game")
-        for (dirpath, dirnames, filenames) in os.walk(templates_path):
-            for filename in filenames:
-                character_name = filename.replace(".png", "")
-                templates.append(
-                    (character_name, cv2.imread(f"{templates_path}/{filename}")))
-
         x, y, w, h = (65, 10, 180, 150)
         roi = self.img[y:y+h, x:x+w]
 
         character_match = (0, "")
 
-        for (character_name, template) in templates:
+        for (character_name, template) in INGAME_CHARACTER_TEMPLATES:
             res = cv2.matchTemplate(roi, template, cv2.TM_CCOEFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
             if max_val > character_match[0]:
@@ -95,24 +113,13 @@ class GameState:
 
     def match_loading_dungeon(self, character_id):
         if self.match_playing_character() is None:
-            templates = []
-
-            templates_path = os.path.join(TEMPLATES_BASE_PATH, "dungeons")
-            for (dirpath, dirnames, filenames) in os.walk(templates_path):
-                for filename in filenames:
-                    character_name = filename.replace(".png", "")
-                    templates.append(
-                        (character_name, cv2.imread(
-                            f"{templates_path}/{filename}", cv2.IMREAD_GRAYSCALE))
-                    )
-
             x, y, w, h = (500, 100, 980, 670)
             roi = cv2.cvtColor(self.img[y:y + h, x:x + w], cv2.COLOR_BGR2GRAY)
 
             best_match = (0, "")
             second_best_match = (0, "")
 
-            for (dungeon_name, template) in templates:
+            for (dungeon_name, template) in DUNGEON_TEMPLATES:
                 res = cv2.matchTemplate(roi, template, cv2.TM_CCOEFF_NORMED)
                 min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 
@@ -152,21 +159,12 @@ class GameState:
                 return entry_id
 
     def match_lobby_character(self):
-        templates = []
-
-        templates_path = os.path.join(TEMPLATES_BASE_PATH, "characters")
-        for (dirpath, dirnames, filenames) in os.walk(templates_path):
-            for filename in filenames:
-                character_name = filename.replace(".png", "")
-                templates.append(
-                    (character_name, cv2.imread(f"{templates_path}/{filename}")))
-
         x, y, w, h = (18, 1020, 75, 55)
         roi = self.img[y:y+h, x:x+w]
 
         character_match = (0, "")
 
-        for (character_name, template) in templates:
+        for (character_name, template) in LOBBY_CHARACTER_TEMPLATES:
             res = cv2.matchTemplate(roi, template, cv2.TM_CCOEFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
             if max_val > character_match[0]:
