@@ -98,4 +98,5 @@ backend/venv/
 backend/env/
 backend/.venv/
 backend/data/screenshot.png
-
+backend/third-party/**/*
+!backend/third-party/**/.gitkeep

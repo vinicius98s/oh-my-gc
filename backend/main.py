@@ -24,9 +24,7 @@ def game_loop(args, broadcaster):
             break
 
         with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
-            title = "DESKTOP-ASIBELB - Google Chrome"
-            # title = "GrandChase v.1.72.09 x64"
-            window = game.get_window(title)
+            window = game.get_window()
             if window is None:
                 print("[game_loop]: Game window not found")
                 continue

@@ -5,12 +5,17 @@ import cv2
 import mss
 import pywinctl as pwc
 import numpy as np
+import re
 
-# TODO: figure this out when app is bundled
-# pytesseract.pytesseract.tesseract_cmd = "C:\Program Files\Tesseract-OCR\tesseract.exe"
+from utils import parse_args
 
 
-TEMPLATES_BASE_PATH = os.path.join(os.curdir, "data", "templates")
+args = parse_args()
+if args.TESSERACT_PATH:
+    pytesseract.pytesseract.tesseract_cmd = args.TESSERACT_PATH
+
+
+TEMPLATES_BASE_PATH = os.path.join(args.data, "templates")
 
 
 def load_templates(path, gray=False):
@@ -187,9 +192,10 @@ class GameState:
             self.dungeon = None
 
 
-def get_window(title):
+def get_window():
     try:
-        windows = pwc.getWindowsWithTitle(title)
+        title = re.compile(r"GrandChase v\.\d+\.\d+\.\d+ x\d+")
+        windows = pwc.getWindowsWithTitle(title, None, pwc.Re.MATCH)
         if len(windows) == 0:
             return
         return windows[0]

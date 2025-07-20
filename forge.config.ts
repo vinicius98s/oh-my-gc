@@ -14,13 +14,11 @@ import { rendererConfig } from "./webpack.renderer.config";
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    extraResource: ["./backend/dist/main.exe", "./backend/third-party", "./backend/data"],
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({}),
-    new MakerZIP({}, ["darwin"]),
-    new MakerRpm({}),
-    new MakerDeb({}),
   ],
   plugins: [
     new AutoUnpackNativesPlugin({}),

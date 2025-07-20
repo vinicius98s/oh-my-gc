@@ -13,5 +13,10 @@ def parse_args():
         type=int,
         default=5000
     )
+    parser.add_argument(
+        "--TESSERACT_PATH",
+        type=str,
+        default=None
+    )
     args, _ = parser.parse_known_args()
     return args

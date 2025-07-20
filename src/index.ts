@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import net from "net";
-import { spawn } from "child_process";
+import { ChildProcessWithoutNullStreams, spawn } from "child_process";
+import path from "path";
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -24,12 +25,18 @@ function getRandomOpenPort(): number {
   return address.port;
 }
 
+let backendProcess: ChildProcessWithoutNullStreams | undefined;
+
 const createWindow = () => {
   const port = getRandomOpenPort();
   if (app.isPackaged) {
-    spawn("./backend/dist/main", [
+    const tesseractPath = path.join(process.resourcesPath, "third-party", "tesseract-win64", "tesseract.exe");
+    const dataPath = path.join(process.resourcesPath, "data");
+    const backendPath = path.join(process.resourcesPath, "main.exe");
+    backendProcess = spawn(backendPath, [
       `--port=${port}`,
-      `--data=/home/vinicius/p/oh-my-gc/backend/data`,
+      `--data=${dataPath}`,
+      `--TESSERACT_PATH=${tesseractPath}`,
     ]);
   }
 
@@ -87,5 +94,11 @@ app.on("window-all-closed", () => {
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+
+app.on("will-quit", () => {
+  if (backendProcess) {
+    backendProcess.kill();
   }
 });
