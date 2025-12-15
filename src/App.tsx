@@ -10,7 +10,5 @@ export default function App() {
     return <Onboarding />;
   }
 
-  return (
-    <Home />
-  );
+  return <Home />;
 }

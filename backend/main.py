@@ -61,6 +61,7 @@ def main():
     broadcaster = SSEBroadcaster()
     handler = partial(Handler, broadcaster=broadcaster)
     httpd = socketserver.ThreadingTCPServer(("", args.port), handler)
+    httpd.daemon_threads = True
     print(f"[main]: Serving at http://localhost:{args.port}")
 
     run_server = threading.Thread(target=server, args=(httpd,))

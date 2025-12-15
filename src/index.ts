@@ -30,7 +30,12 @@ let backendProcess: ChildProcessWithoutNullStreams | undefined;
 const createWindow = () => {
   const port = getRandomOpenPort();
   if (app.isPackaged) {
-    const tesseractPath = path.join(process.resourcesPath, "third-party", "tesseract-win64", "tesseract.exe");
+    const tesseractPath = path.join(
+      process.resourcesPath,
+      "third-party",
+      "tesseract-win64",
+      "tesseract.exe",
+    );
     const dataPath = path.join(process.resourcesPath, "data");
     const backendPath = path.join(process.resourcesPath, "main.exe");
     backendProcess = spawn(backendPath, [

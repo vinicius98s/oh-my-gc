@@ -33,10 +33,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             args = parse_args()
             with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
                 content_len = int(self.headers.get("Content-Length"))
-                body = self.rfile.read(content_len).decode("utf-8")
-                characters = json.loads(body)["characters"]
-                response = update_tracked_characters(DB, characters)
-                self.wfile.write(response.encode())
+            body = self.rfile.read(content_len).decode("utf-8")
+            payload = json.loads(body)
+            response = update_tracked_characters(DB, payload)
+            self.wfile.write(response.encode())
 
         elif self.path == "/dungeons_entries":
             try:
@@ -52,9 +52,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     dungeon_id = body["dungeonId"]
                     character_id = body["characterId"]
                     value = body["value"]
+                    update_mode = body.get("update_mode", "weekly")
 
                     response = update_dungeon_entries(
-                        DB, dungeon_id, character_id, value)
+                        DB, dungeon_id, character_id, value, update_mode)
                     if response is None:
                         self.send_error(500, "Server Error")
                     else:

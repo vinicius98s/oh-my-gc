@@ -67,6 +67,8 @@ export type TrackedCharactersResponse = { id: number; name: string }[];
 
 export async function getTrackedCharacters(baseUrl: string) {
   const response = await fetch(`${baseUrl}/tracked_characters`);
-  const { data } = await response.json() as { data: TrackedCharactersResponse };
+  const { data } = (await response.json()) as {
+    data: TrackedCharactersResponse;
+  };
   return data;
 }
