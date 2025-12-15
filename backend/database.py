@@ -24,7 +24,10 @@ def get_dungeons(DB):
             response.append({
                 "id": id,
                 "name": row[1],
-                "weekly_entry_limit": row[2],
+                "display_name": row[2],
+                "type": row[3],
+                "weekly_entry_limit": row[4],
+                "daily_entry_limit": row[5],
                 "characters_entries": characters_entries
             })
         return json.dumps({"data": response})
@@ -65,28 +68,68 @@ def get_tracked_characters(DB):
         return None
 
 
-def update_tracked_characters(DB, characters):
+def update_tracked_characters(DB, payload):
     response = []
+    characters = payload.get("characters", [])
+    schedules = payload.get("schedules", {})
+
     if characters:
         cursor = DB.cursor()
+        
+        # 1. Update characters tracking status
         placeholders = ", ".join(["?"] * len(characters))
-        q = f"UPDATE characters SET tracking = 1 WHERE id IN ({
-            placeholders}) RETURNING id, name"
+        q = f"UPDATE characters SET tracking = 1 WHERE id IN ({placeholders}) RETURNING id, name"
         rows = cursor.execute(q, characters).fetchall()
         response = [{"id": row[0], "name": row[1]} for row in rows]
+
+        # 2. Update Schedules
+        # First, delete existing schedules for these characters to avoid duplicates/stale data
+        delete_q = f"DELETE FROM character_schedules WHERE character_id IN ({placeholders})"
+        cursor.execute(delete_q, characters)
+
+        # Prepare insert data
+        insert_data = []
+        for char_id_str, daily_schedules in schedules.items():
+            # JSON keys are strings, ensure we use int for DB if needed (though python handles it)
+            char_id = int(char_id_str)
+            if char_id not in characters:
+                continue # Only save schedules for tracked characters
+
+            for day, dungeon_ids in daily_schedules.items():
+                for dungeon_id in dungeon_ids:
+                    insert_data.append((char_id, day, dungeon_id))
+        
+        if insert_data:
+            insert_q = "INSERT INTO character_schedules (character_id, day, dungeon_id) VALUES (?, ?, ?)"
+            cursor.executemany(insert_q, insert_data)
+
         DB.commit()
     return json.dumps({"data": response})
 
 
-def update_dungeon_entries(DB, dungeon_id, character_id, value):
+def update_dungeon_entries(DB, dungeon_id, character_id, value, update_mode="weekly"):
     try:
         cursor = DB.cursor()
-        query = """
+        
+        date_filter = ""
+        if update_mode == "daily":
+            # Filter for today only
+            date_filter = """
+                AND started_at >= date('now')
+                AND started_at < date('now', '+1 day')
+            """
+        else:
+            # Default weekly behavior (last 7 days)
+            date_filter = """
+                AND started_at >= date('now', 'weekday 3', '-7 days')
+                AND started_at < date('now', 'weekday 3', '+7 days')
+            """
+
+        query = f"""
             SELECT count(id) FROM dungeons_entries
             WHERE dungeon_id = ?
             AND character_id = ?
-            AND started_at >= date('now', 'weekday 3', '-7 days')
-            AND started_at < date('now', 'weekday 3', '+7 days')
+            {date_filter}
         """
         count = cursor.execute(query, (dungeon_id, character_id)).fetchone()[0]
 
@@ -103,12 +146,11 @@ def update_dungeon_entries(DB, dungeon_id, character_id, value):
             cursor.executemany(insert, params)
         else:
             diff = count - value
-            q = """
+            q = f"""
                 SELECT id FROM dungeons_entries
                 WHERE dungeon_id = ?
                 AND character_id = ?
-                AND started_at >= date('now', 'weekday 3', '-7 days')
-                AND started_at < date('now', 'weekday 3', '+7 days')
+                {date_filter}
             """
             ids = cursor.execute(q, (dungeon_id, character_id)).fetchall()
             formatted_ids = [id[0] for id in ids][:diff]

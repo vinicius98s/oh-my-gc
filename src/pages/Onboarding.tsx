@@ -2,11 +2,16 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Button from "../components/Button";
+import ScheduleBuilder, {
+  ScheduleState,
+} from "../components/ScheduleBuilder";
 import { useDataContext } from "../DataContext";
 import { characters } from "../utils/characters";
+import { cn } from "../utils/lib";
 
 export default function Onboarding() {
   const [selectedCharacters, setSelectedCharacters] = useState<number[]>([]);
+  const [step, setStep] = useState(1);
 
   const { url } = useDataContext();
   const queryClient = useQueryClient();
@@ -32,56 +37,100 @@ export default function Onboarding() {
   };
 
   const mutation = useMutation({
-    mutationFn: async (characters: number[]) => {
+    mutationFn: async (payload: {
+      characters: number[];
+      schedules: ScheduleState;
+    }) => {
       const response = await fetch(`${url}/tracked_characters`, {
         method: "POST",
-        body: JSON.stringify({ characters }),
+        body: JSON.stringify(payload),
       });
       const { data } = await response.json();
       return data;
     },
   });
 
-  const onConfirm = () => {
-    mutation.mutate(selectedCharacters, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tracked_characters"] });
+  const handleConfirm = (schedules: ScheduleState) => {
+    mutation.mutate(
+      { characters: selectedCharacters, schedules },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["tracked_characters"] });
+        },
       },
-    });
+    );
   };
 
   return (
-    <div className="mt-10">
-      <div className="max-w-sm">
-        <h1 className="font-semibold text-xl">Welcome to Oh My GC</h1>
-        <p className="text-sm">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua.
-        </p>
-      </div>
+    <div className="flex flex-col h-full pt-8 px-10 overflow-hidden">
+      <h1 className="font-semibold text-xl">Welcome to Oh My GC!</h1>
+      <p className="text-sm">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+        tempor incididunt ut labore et dolore magna aliqua.
+      </p>
 
-      <h2 className="mt-14 mb-4 font-semibold text-lg">
-        Select the characters you want to track:
-      </h2>
-
-      <div className="flex flex-wrap gap-4">
-        {characters.map(({ id, image }) => (
-          <button
-            className={`${isSelected(id) ? "border-blue opacity-100" : "border-transparent opacity-30"} rounded-md border-2 cursor-pointer focus:outline-1 outline-white outline-offset-1`}
-            key={id}
-            onClick={() => toggleCharacter(id)}
-          >
-            <img src={image} className="rounded-md" />
-          </button>
-        ))}
-      </div>
-
-      <div className="flex w-full justify-center gap-2 mt-4">
-        <Button onClick={toggleAll}>Toggle all</Button>
-        <Button disabled={selectedCharacters.length === 0} onClick={onConfirm}>
-          Confirm
+      <div className="flex gap-4 items-center justify-center my-4 mb-6">
+        <Button
+          className={cn(
+            "rounded-full text-sm size-8 p-0 items-center justify-center flex",
+            step !== 1 ? "from-light-gray to-gray" : "",
+          )}
+          onClick={() => setStep(1)}
+        >
+          1
+        </Button>
+        <div className="h-[2px] w-12 bg-gray-600"></div>
+        <Button
+          className="rounded-full text-sm size-8 p-0 items-center justify-center flex"
+          disabled={step !== 2}
+        >
+          2
         </Button>
       </div>
+
+      {step === 1 && (
+        <>
+          <h2 className="mb-4 font-semibold text-md text-center">
+            Select the characters you want to track
+          </h2>
+
+          <div className="flex flex-wrap gap-4">
+            {characters.map(({ id, image }) => (
+              <button
+                className={`${isSelected(id) ? "border-blue opacity-100" : "border-transparent opacity-30"} rounded-md border-2 cursor-pointer focus:outline-1 outline-white outline-offset-1`}
+                key={id}
+                onClick={() => toggleCharacter(id)}
+              >
+                <img src={image} className="rounded-md" />
+              </button>
+            ))}
+          </div>
+
+          <div className="flex w-full justify-center gap-2 mt-8">
+            <Button onClick={toggleAll}>Toggle all</Button>
+            <Button
+              disabled={selectedCharacters.length === 0}
+              onClick={() => setStep(2)}
+            >
+              Next
+            </Button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <h2 className="mb-4 font-semibold text-md text-center">
+            Build your schedule for each character
+          </h2>
+          <div className="flex-1 min-h-0">
+            <ScheduleBuilder
+              selectedCharacterIds={selectedCharacters}
+              onConfirm={handleConfirm}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

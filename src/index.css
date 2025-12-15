@@ -13,10 +13,17 @@
   --color-light-blue: #82c1f7;
 
   --animate-playing: playing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
   @keyframes playing {
-    0%, 100% {
-      outline-color: color-mix(in oklab, var(--color-green-400) /* oklch(79.2% 0.209 151.711) = #05df72 */ 10%, transparent);
+    0%,
+    100% {
+      outline-color: color-mix(
+        in oklab,
+        var(--color-green-400) /* oklch(79.2% 0.209 151.711) = #05df72 */ 10%,
+        transparent
+      );
     }
+
     50% {
       outline-color: var(--color-green-400);
     }
@@ -29,6 +36,25 @@
 }
 
 body {
-  @apply bg-gray overflow-hidden;
+  @apply bg-gray;
 }
 
+::-webkit-scrollbar {
+  @apply w-1.5 h-1.5;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full transition-colors;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-white/20;
+}
+
+::-webkit-scrollbar-corner {
+  @apply bg-transparent;
+}

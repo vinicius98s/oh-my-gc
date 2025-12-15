@@ -1,13 +1,33 @@
 import theCrucible from "../assets/dungeons/the-crucible.png";
 import sanctumOfDestruction from "../assets/dungeons/sanctum-of-destruction.png";
 import wizardsLabyrinth from "../assets/dungeons/wizards-labyrinth.png";
+import berkas from "../assets/dungeons/berkas.png";
+import towerOfDisappearance from "../assets/dungeons/tower-of-disappearance.png";
+import landOfJudgment from "../assets/dungeons/land-of-judgment.png";
+import infinityCloister from "../assets/dungeons/infinity-cloister.png";
+import abyssalPath from "../assets/dungeons/abyssal-path.png";
+import voidInvasion from "../assets/dungeons/void-invasion.png";
+import voidTaint from "../assets/dungeons/void-taint.png";
+import voidNightmare from "../assets/dungeons/void-nightmare.png";
+import angryBoss from "../assets/dungeons/angry-boss.png";
 
 export type Dungeon = {
   id: number;
   name: string;
+  type: "hero-dungeon" | "void-raid-dungeon" | "event-dungeon";
   displayName: string;
   image: string;
   weeklyEntryLimit: number;
+  dailyEntryLimit: number;
+  charactersWeeklyEntries: { entries_count: number; character_id: number }[];
+  charactersDailyEntries: { entries_count: number; character_id: number }[];
+};
+
+export type FormattedDungeon = Dungeon & {
+  totalCharactersEntries: number;
+  allCharactersEntries: number;
+  totalDailyCharactersEntries: number;
+  allDailyCharactersEntries: number;
 };
 
 function getDungeonImage(id: number) {
@@ -15,22 +35,15 @@ function getDungeonImage(id: number) {
     1: theCrucible,
     2: sanctumOfDestruction,
     3: wizardsLabyrinth,
-  }[id];
-}
-
-export function getDungeonDisplayName(id: number | string) {
-  if (typeof id === "string") {
-    return {
-      "the-crucible": "The Crucible",
-      "sanctum-of-destruction": "Sanctum of Destruction",
-      "wizards-labyrinth": "Wizard's Labyrinth",
-    }[id];
-  }
-
-  return {
-    1: "The Crucible",
-    2: "Sanctum of Destruction",
-    3: "Wizard's Labyrinth",
+    4: berkas,
+    5: towerOfDisappearance,
+    6: landOfJudgment,
+    7: infinityCloister,
+    8: abyssalPath,
+    9: angryBoss,
+    10: voidInvasion,
+    11: voidTaint,
+    12: voidNightmare,
   }[id];
 }
 
@@ -45,29 +58,90 @@ export function getCharacterDungeonEntries(
   ).length;
 }
 
+export function getCharacterDailyEntries(
+  dungeonsEntries: DungeonsEntriesResponse,
+  dungeonId: number,
+  characterId: number,
+) {
+  const today = new Date().toDateString();
+  return dungeonsEntries.filter(
+    ({ dungeon_id, character_id, started_at }) =>
+      dungeon_id === dungeonId &&
+      character_id === characterId &&
+      new Date(started_at + "Z").toDateString() === today,
+  ).length;
+}
+
 export function formatDungeons(
   dungeons: DungeonsResponse,
   dungeonsEntries: DungeonsEntriesResponse,
   trackedCharactersCount: number,
 ) {
-  return dungeons.map(({ id, name, weekly_entry_limit, characters_entries }) => ({
-    id,
-    name,
-    displayName: getDungeonDisplayName(id),
-    image: getDungeonImage(id),
-    weeklyEntryLimit: weekly_entry_limit,
-    totalCharactersEntries: weekly_entry_limit * trackedCharactersCount,
-    charactersEntries: characters_entries,
-    allCharactersEntries: dungeonsEntries.filter(
-      ({ dungeon_id }) => dungeon_id === id,
-    ).length,
-  }));
+  return dungeons.map(
+    ({
+      id,
+      name,
+      type,
+      display_name,
+      weekly_entry_limit,
+      daily_entry_limit,
+      characters_entries,
+    }) => {
+      // Calculate daily entries map for all characters
+      const dailyEntriesMap = new Map<number, number>();
+      const today = new Date().toDateString();
+      let allDailyCharactersEntries = 0;
+
+      dungeonsEntries.forEach((entry) => {
+        if (
+          entry.dungeon_id === id &&
+          new Date(entry.started_at + "Z").toDateString() === today
+        ) {
+          dailyEntriesMap.set(
+            entry.character_id,
+            (dailyEntriesMap.get(entry.character_id) || 0) + 1,
+          );
+          allDailyCharactersEntries++;
+        }
+      });
+
+      const charactersDailyEntries = Array.from(dailyEntriesMap.entries()).map(
+        ([character_id, entries_count]) => ({
+          character_id,
+          entries_count,
+        }),
+      );
+
+      return {
+        id,
+        name,
+        type,
+        displayName: display_name,
+        image: getDungeonImage(id),
+        weeklyEntryLimit: weekly_entry_limit,
+        dailyEntryLimit: daily_entry_limit,
+        totalCharactersEntries:
+          (weekly_entry_limit || 0) * trackedCharactersCount,
+        allCharactersEntries: dungeonsEntries.filter(
+          ({ dungeon_id }) => dungeon_id === id,
+        ).length,
+        totalDailyCharactersEntries:
+          (daily_entry_limit || 0) * trackedCharactersCount,
+        allDailyCharactersEntries: allDailyCharactersEntries,
+        charactersWeeklyEntries: characters_entries, // From DB (Weekly)
+        charactersDailyEntries: charactersDailyEntries, // Calculated (Daily)
+      };
+    },
+  );
 }
 
 export type DungeonsResponse = {
   id: number;
   name: string;
+  display_name: string;
+  type: "hero-dungeon" | "void-raid-dungeon" | "event-dungeon";
   weekly_entry_limit: number;
+  daily_entry_limit: number;
   characters_entries: {
     entries_count: number;
     character_id: number;

@@ -66,7 +66,6 @@ export function DataContextProvider({
     queryFn: () => getTrackedCharacters(url),
   });
 
-
   const { data: dungeonsEntries } = useQuery<DungeonsEntriesResponse>({
     queryKey: ["dungeons_entries"],
     queryFn: () => getDungeonsEntries(url),
@@ -85,7 +84,7 @@ export function DataContextProvider({
       });
 
       evtSource.addEventListener("dungeons", (e: MessageEvent) => {
-        const { type, dungeon } = JSON.parse(e.data.replaceAll("'", "\""));
+        const { type, dungeon } = JSON.parse(e.data.replaceAll("'", '"'));
         switch (type) {
           case "start":
             setPlayingDungeon(dungeon);

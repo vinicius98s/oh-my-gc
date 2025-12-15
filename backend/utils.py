@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument(
         "--TESSERACT_PATH",
         type=str,
-        default=None
+        default="./third-party/tesseract-win64/tesseract.exe"
     )
     args, _ = parser.parse_known_args()
     return args

@@ -6,6 +6,7 @@ type Props = {
   min?: number;
   max?: number;
   onChangeValue?: (value: number) => void;
+  className?: string;
 };
 
 export default function NumberInput({
@@ -13,6 +14,7 @@ export default function NumberInput({
   min = 0,
   max = 100,
   onChangeValue,
+  className,
 }: Props) {
   const [value, setValue] = useState(defaultValue);
 
@@ -33,7 +35,9 @@ export default function NumberInput({
   }, [value]);
 
   return (
-    <div className="inline-flex border border-blue rounded overflow-hidden">
+    <div
+      className={`inline-flex border border-blue rounded overflow-hidden ${className || ""}`}
+    >
       <input
         type="number"
         className="w-16 px-2 py-1 text-center focus:outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
