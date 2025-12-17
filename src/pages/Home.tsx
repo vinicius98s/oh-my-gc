@@ -9,6 +9,7 @@ import { getCharacterById } from "../utils/characters";
 import DungeonsList from "../components/DungeonsList";
 import GameStatus from "../components/GameStatus";
 import { formatDungeons } from "../utils/dungeons";
+import { cn } from "../utils/lib";
 
 export default function Home() {
   const {
@@ -66,16 +67,6 @@ export default function Home() {
     (d) => d.type === "another-world"
   );
 
-  if (!playingCharacter) {
-    return (
-      <div className="h-screen flex items-center justify-center text-center">
-        Could not find any playing character.
-        <br />
-        Make sure to have the game open and running.
-      </div>
-    );
-  }
-
   const currentlyPlayingDungeon = [
     ...heroDungeons,
     ...voidRaidDungeons,
@@ -85,7 +76,7 @@ export default function Home() {
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
   const currentTrackedChar = trackedCharacters.find(
-    (c) => c.id === playingCharacter.id
+    (c) => c.id === playingCharacter?.id
   );
   const todayScheduleIds = currentTrackedChar?.schedule?.[today] || [];
   const todayDungeons = todayScheduleIds
@@ -161,12 +152,22 @@ export default function Home() {
   }, [
     isCurrentScheduleComplete,
     trackedCharacters,
-    playingCharacter.id,
+    playingCharacter?.id,
     today,
     formattedDungeons,
   ]);
 
   const isAllDone = isCurrentScheduleComplete && !nextCharacter;
+
+  if (!playingCharacter) {
+    return (
+      <div className="h-screen flex items-center justify-center text-center">
+        Could not find any playing character.
+        <br />
+        Make sure to have the game open and running.
+      </div>
+    );
+  }
 
   return (
     <div className="h-full overflow-y-auto">
@@ -182,7 +183,7 @@ export default function Home() {
 
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-md font-bold text-white">
               Today's Schedule{" "}
               <span className="text-light-blue text-sm">({today})</span>
             </h2>
@@ -196,48 +197,52 @@ export default function Home() {
 
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
             {todayDungeons.length > 0 ? (
-              todayDungeons.map((d) => {
+              todayDungeons.map((dungeon) => {
                 const dailyEntries =
-                  d!.charactersDailyEntries.find(
+                  dungeon.charactersDailyEntries.find(
                     (entry) => entry.character_id === playingCharacter.id
                   )?.entries_count || 0;
 
                 const weeklyEntries =
-                  d!.charactersWeeklyEntries.find(
+                  dungeon.charactersWeeklyEntries.find(
                     (entry) => entry.character_id === playingCharacter.id
                   )?.entries_count || 0;
 
                 const isDailyComplete =
-                  d!.dailyEntryLimit > 0 && dailyEntries >= d!.dailyEntryLimit;
+                  dungeon.dailyEntryLimit > 0 &&
+                  dailyEntries >= dungeon.dailyEntryLimit;
+
                 const isWeeklyComplete =
-                  d!.weeklyEntryLimit > 0 &&
-                  weeklyEntries >= d!.weeklyEntryLimit;
+                  dungeon.weeklyEntryLimit > 0 &&
+                  weeklyEntries >= dungeon.weeklyEntryLimit;
 
                 const isComplete = isDailyComplete || isWeeklyComplete;
 
                 let progressText = "";
-                if (d!.dailyEntryLimit > 0) {
-                  progressText = `${dailyEntries}/${d!.dailyEntryLimit}`;
-                } else if (d!.weeklyEntryLimit > 0) {
-                  progressText = `${weeklyEntries}/${d!.weeklyEntryLimit}`;
+                if (dungeon.dailyEntryLimit > 0) {
+                  progressText = `${dailyEntries}/${dungeon.dailyEntryLimit}`;
+                } else if (dungeon.weeklyEntryLimit > 0) {
+                  progressText = `${weeklyEntries}/${dungeon.weeklyEntryLimit}`;
                 }
 
                 return (
                   <div
-                    key={d!.id}
-                    className={`flex-shrink-0 w-32 rounded-lg py-4 px-2 border flex flex-col items-center gap-2 group transition-colors ${
+                    key={dungeon.id}
+                    className={cn(
+                      "flex-shrink-0 w-32 rounded-lg py-4 px-2 border flex flex-col items-center gap-2 group transition-colors",
                       isComplete
                         ? "bg-gray/10 border-white/5 opacity-60"
                         : "bg-gray/30 border-white/10 hover:border-blue/50"
-                    }`}
+                    )}
                   >
                     <div className="relative">
                       <img
-                        src={d!.image}
-                        alt={d!.displayName}
-                        className={`w-16 h-16 object-cover rounded shadow-md group-hover:scale-105 transition-transform ${
+                        src={dungeon.image}
+                        alt={dungeon.displayName}
+                        className={cn(
+                          "w-16 h-16 rounded shadow-md",
                           isComplete ? "grayscale" : ""
-                        }`}
+                        )}
                       />
                       {isComplete && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded backdrop-blur-[1px]">
@@ -256,21 +261,23 @@ export default function Home() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col gap-1 items-center w-full">
+                    <div className="flex flex-col gap-1 items-center w-full h-full">
                       <span
-                        className={`text-xs text-center font-medium line-clamp-2 leading-tight ${
+                        className={cn(
+                          "text-sm text-center font-medium line-clamp-2 leading-tight",
                           isComplete
                             ? "text-gray-400 line-through"
                             : "text-gray-200 group-hover:text-white"
-                        }`}
+                        )}
                       >
-                        {d!.displayName}
+                        {dungeon.displayName}
                       </span>
                       {progressText && (
                         <span
-                          className={`text-[10px] font-mono ${
+                          className={cn(
+                            "text-xs mt-auto",
                             isComplete ? "text-green-500/70" : "text-blue-300"
-                          }`}
+                          )}
                         >
                           {progressText}
                         </span>
