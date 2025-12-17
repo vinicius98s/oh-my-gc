@@ -21,6 +21,7 @@ import decane from "../assets/characters/decane.png";
 import ai from "../assets/characters/ai.png";
 import kallia from "../assets/characters/kallia.png";
 import uno from "../assets/characters/uno.png";
+import iris from "../assets/characters/iris.png";
 
 export type Character = {
   id: number;
@@ -179,7 +180,7 @@ export const characters: Character[] = [
     name: "ai",
     image: ai,
     displayName: "Ai",
-    colorTheme: { from: "#22d3ee", to: "#0891b2" }, // Cyan-400 to Cyan-600
+    colorTheme: { from: "#22d3ee", to: "#0ea5e9" }, // Cyan-400 to Blue-500
   },
   {
     id: 22,
@@ -195,6 +196,13 @@ export const characters: Character[] = [
     displayName: "Uno",
     colorTheme: { from: "#1d4ed8", to: "#172554" }, // Blue-700 to Blue-950
   },
+  {
+    id: 24,
+    name: "iris",
+    image: iris,
+    displayName: "Iris",
+    colorTheme: { from: "#10b981", to: "#0ea5e9" }, // Green-500 to Blue-500
+  }
 ];
 
 export function getCharacterByName(name: string) {
