@@ -1,4 +1,3 @@
-from rapidfuzz import fuzz
 import os
 import pytesseract
 import cv2
@@ -6,7 +5,7 @@ import mss
 import pywinctl as pwc
 import numpy as np
 import re
-
+from rapidfuzz import fuzz
 from utils import parse_args
 
 
@@ -167,6 +166,9 @@ class GameState:
         x, y, w, h = (18, 1020, 75, 55)
         roi = self.img[y:y+h, x:x+w]
 
+        if np.max(roi) < 30:
+            return False
+
         character_match = (0, "")
 
         for (character_name, template) in LOBBY_CHARACTER_TEMPLATES:
@@ -177,7 +179,7 @@ class GameState:
 
         threshold = 0.80
         confidence = character_match[0]
-        if confidence < 1 and confidence > threshold:
+        if confidence > threshold:
             character = character_match[1]
             cursor = self.DB.cursor()
             character_id = cursor.execute(
@@ -204,16 +206,29 @@ def get_window():
         return
 
 
-def capture_dungeon_template(dungeon_name):
+def capture_template(template_name, template_type):
     with mss.mss() as sct:
-        x, y, w, h = (500, 100, 980, 670)
+        if template_type == "characters":
+            x, y, w, h = (18, 1020, 75, 55)
+        elif template_type == "dungeon":
+            x, y, w, h = (500, 100, 980, 670)
+        elif template_type == "in-game":
+            x, y, w, h = (65, 10, 180, 150)
+        else:
+            raise Exception("Invalid template type")
+
+        if template_type == "in-game":
+            path = f"{args.data}/templates/characters/in-game/{template_name}.png"
+        else:
+            path = f"{args.data}/templates/{template_type}/{template_name}.png"
+
         screenshot = sct.grab({
             "top": y,
             "left": x,
             "width": w,
             "height": h
         })
-        mss.tools.to_png(screenshot.rgb, screenshot.size, output=f"{args.data}/templates/dungeons/{dungeon_name}.png")
+        mss.tools.to_png(screenshot.rgb, screenshot.size, output=path)
 
 
 def take_screenshot(window, image_path):

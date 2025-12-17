@@ -15,5 +15,5 @@ INSERT INTO characters (name) VALUES
 ('rey'), ('lupus'), ('lin'),
 ('azin'), ('holy'), ('edel'),
 ('veigas'), ('decane'), ('ai'),
-('kallia'), ('uno');
+('kallia'), ('uno'), ('iris');
 
