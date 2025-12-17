@@ -204,6 +204,18 @@ def get_window():
         return
 
 
+def capture_dungeon_template(dungeon_name):
+    with mss.mss() as sct:
+        x, y, w, h = (500, 100, 980, 670)
+        screenshot = sct.grab({
+            "top": y,
+            "left": x,
+            "width": w,
+            "height": h
+        })
+        mss.tools.to_png(screenshot.rgb, screenshot.size, output=f"{args.data}/templates/dungeons/{dungeon_name}.png")
+
+
 def take_screenshot(window, image_path):
     with mss.mss() as sct:
         screenshot = sct.grab({
@@ -215,4 +227,6 @@ def take_screenshot(window, image_path):
         mss.tools.to_png(screenshot.rgb, screenshot.size, output=image_path)
 
     img = cv2.imread(image_path)
+    if img.shape[0] != 1080 or img.shape[1] != 1920:
+        img = cv2.resize(img, (1920, 1080))
     return img

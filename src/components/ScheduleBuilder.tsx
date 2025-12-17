@@ -8,6 +8,7 @@ import { formatDungeons } from "../utils/dungeons";
 
 type SchedulerBuilderProps = {
   selectedCharacterIds: number[];
+  initialSchedules?: ScheduleState;
   onConfirm: (schedules: ScheduleState) => void;
 };
 
@@ -26,6 +27,7 @@ export type ScheduleState = Record<number, Record<string, number[]>>;
 
 export default function SchedulerBuilder({
   selectedCharacterIds,
+  initialSchedules,
   onConfirm,
 }: SchedulerBuilderProps) {
   const { dungeons, dungeonsEntries, trackedCharacters } = useDataContext();
@@ -39,7 +41,9 @@ export default function SchedulerBuilder({
     number | null
   >(selectedCharacterIds.length > 0 ? selectedCharacterIds[0] : null);
 
-  const [schedules, setSchedules] = useState<ScheduleState>({});
+  const [schedules, setSchedules] = useState<ScheduleState>(
+    initialSchedules || {},
+  );
   const [openModalDay, setOpenModalDay] = useState<string | null>(null);
 
   // Memoized current character for easy access
@@ -90,35 +94,32 @@ export default function SchedulerBuilder({
     }
   };
 
-  const getDungeonName = (id: number) => {
-    const dungeon = formattedDungeons.find((d) => d.id === id);
-    return dungeon ? dungeon.displayName || dungeon.name : "Unknown Dungeon";
-  };
-
   return (
     <div className="flex h-full w-full max-w-6xl mx-auto overflow-hidden gap-6 pb-4">
-      <div className="w-24 flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-2 min-h-0 border-r border-white/10">
-        {selectedCharacterIds.map((charId) => {
-          const character = getCharacterById(charId);
-          if (!character) return null;
-          const isSelected = charId === selectedBuilderCharacterId;
+      {selectedCharacterIds.length > 1 ? (
+        <div className="w-24 flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-2 min-h-0 border-r border-white/10">
+          {selectedCharacterIds.map((charId) => {
+            const character = getCharacterById(charId);
+            if (!character) return null;
+            const isSelected = charId === selectedBuilderCharacterId;
 
-          return (
-            <button
-              key={charId}
-              onClick={() => setSelectedBuilderCharacterId(charId)}
-              title={character.displayName}
-              className={`group flex items-center justify-center rounded-md cursor-pointer focus:outline-none`}
-            >
-              <img
-                src={character.image}
-                alt={character.displayName}
-                className={`${isSelected ? "border-blue opacity-100" : "border-transparent opacity-30"} border-2 rounded-md group-focus:border-white`}
-              />
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={charId}
+                onClick={() => setSelectedBuilderCharacterId(charId)}
+                title={character.displayName}
+                className={`group flex items-center justify-center rounded-md cursor-pointer focus:outline-none`}
+              >
+                <img
+                  src={character.image}
+                  alt={character.displayName}
+                  className={`${isSelected ? "border-blue opacity-100" : "border-transparent opacity-30"} border-2 rounded-md group-focus:border-white`}
+                />
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="flex-1 flex flex-col min-h-0">
         {currentCharacter ? (
@@ -170,15 +171,26 @@ export default function SchedulerBuilder({
                       key={day}
                       className="rounded-md bg-gray/30 border border-white/5 p-2 min-h-[180px] flex flex-col gap-1"
                     >
-                      {dungeonIds.map((dungeonId) => (
-                        <div
-                          key={dungeonId}
-                          className="rounded bg-blue/20 px-2 py-1 text-[10px] text-blue-200 truncate border border-blue/30"
-                          title={getDungeonName(dungeonId)}
-                        >
-                          {getDungeonName(dungeonId)}
-                        </div>
-                      ))}
+                      {dungeonIds.map((dungeonId) => {
+                        const dungeon = formattedDungeons.find(
+                          (d) => d.id === dungeonId,
+                        );
+                        if (!dungeon) return null;
+
+                        return (
+                          <div
+                            key={dungeonId}
+                            className="flex items-center justify-center gap-2 rounded bg-blue/20 p-1 text-blue-200 border border-blue/30"
+                            title={dungeon.displayName || dungeon.name}
+                          >
+                            <img
+                              src={dungeon.image}
+                              alt={dungeon.name}
+                              className="rounded"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}

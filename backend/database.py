@@ -62,7 +62,29 @@ def get_tracked_characters(DB):
         cursor = DB.cursor()
         query = "SELECT id, name FROM characters WHERE tracking = 1"
         rows = cursor.execute(query).fetchall()
-        response = [{"id": row[0], "name": row[1]} for row in rows]
+
+        # Fetch all schedules
+        schedules_query = "SELECT character_id, day, dungeon_id FROM character_schedules"
+        schedules_rows = cursor.execute(schedules_query).fetchall()
+
+        # Build schedules map: character_id -> day -> [dungeons]
+        schedules_map = {}
+        for char_id, day, dungeon_id in schedules_rows:
+            if char_id not in schedules_map:
+                schedules_map[char_id] = {}
+            if day not in schedules_map[char_id]:
+                schedules_map[char_id][day] = []
+            schedules_map[char_id][day].append(dungeon_id)
+
+        response = []
+        for row in rows:
+            char_id = row[0]
+            response.append({
+                "id": char_id,
+                "name": row[1],
+                "schedule": schedules_map.get(char_id, {})
+            })
+
         return json.dumps({"data": response})
     except Exception:
         return None

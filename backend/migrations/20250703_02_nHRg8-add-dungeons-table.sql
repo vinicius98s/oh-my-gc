@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS dungeons (
   id INTEGER PRIMARY KEY ASC,
   name TEXT NOT NULL,
   display_name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK(type IN ('hero-dungeon', 'void-raid-dungeon', 'event-dungeon')),
+  type TEXT NOT NULL CHECK(type IN ('hero-dungeon', 'void-raid-dungeon', 'event-dungeon', 'another-world')),
   weekly_entry_limit INTEGER,
   daily_entry_limit INTEGER
 );
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS dungeons_entries (
 INSERT INTO dungeons (name, display_name, type, weekly_entry_limit, daily_entry_limit) VALUES
 ('the-crucible', 'The Crucible', 'hero-dungeon', 3, NULL),
 ('sanctum-of-destruction', 'Sanctum of Destruction', 'hero-dungeon', 3, NULL),
-('wizards-labyrinth', "Wizard's Labyrinth", 'hero-dungeon', 3, NULL),
+('wizards-labyrinth', 'Wizard''s Labyrinth', 'hero-dungeon', 5, NULL),
 ('berkas', 'Berkas', 'hero-dungeon', NULL, 1),
 ('tower-of-disappearance', 'Tower of Disappearance', 'hero-dungeon', NULL, 3),
 ('land-of-judgment', 'Land of Judgment', 'hero-dungeon', NULL, 1),
@@ -32,4 +32,8 @@ INSERT INTO dungeons (name, display_name, type, weekly_entry_limit, daily_entry_
 ('angry-boss', 'Angry Boss', 'event-dungeon', NULL, NULL),
 ('invasion', 'Void (Invasion)', 'void-raid-dungeon', 2, NULL),
 ('taint', 'Void (Taint)', 'void-raid-dungeon', 2, NULL),
-('nightmare', 'Void (Nightmare)', 'void-raid-dungeon', 2, NULL);
+('nightmare', 'Void (Nightmare)', 'void-raid-dungeon', 2, NULL),
+('siege-of-teroka', 'Siege of Teroka', 'another-world', NULL, 1),
+('temple-of-time', 'Temple of Time', 'another-world', NULL, 1),
+('kounat', 'The Great Explosion of Kounat', 'another-world', NULL, 1),
+('chapel-of-eternity', 'Chapel of Eternity', 'another-world', NULL, NULL);

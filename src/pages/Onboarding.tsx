@@ -101,7 +101,7 @@ export default function Onboarding() {
                 key={id}
                 onClick={() => toggleCharacter(id)}
               >
-                <img src={image} className="rounded-md" />
+                <img src={image} className="rounded-md w-[60px] h-[60px]" />
               </button>
             ))}
           </div>

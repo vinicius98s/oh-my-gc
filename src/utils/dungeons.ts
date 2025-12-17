@@ -10,11 +10,16 @@ import voidInvasion from "../assets/dungeons/void-invasion.png";
 import voidTaint from "../assets/dungeons/void-taint.png";
 import voidNightmare from "../assets/dungeons/void-nightmare.png";
 import angryBoss from "../assets/dungeons/angry-boss.png";
+import siegeOfTeroka from "../assets/dungeons/siege-of-teroka.png";
+import templeOfTime from "../assets/dungeons/temple-of-time.png";
+import kounat from "../assets/dungeons/kounat.png";
+import chapelOfEternity from "../assets/dungeons/chapel-of-eternity.png";
 
+type DungeonTypes = "hero-dungeon" | "void-raid-dungeon" | "event-dungeon" | "another-world";
 export type Dungeon = {
   id: number;
   name: string;
-  type: "hero-dungeon" | "void-raid-dungeon" | "event-dungeon";
+  type: DungeonTypes;
   displayName: string;
   image: string;
   weeklyEntryLimit: number;
@@ -44,6 +49,10 @@ function getDungeonImage(id: number) {
     10: voidInvasion,
     11: voidTaint,
     12: voidNightmare,
+    13: siegeOfTeroka,
+    14: templeOfTime,
+    15: kounat,
+    16: chapelOfEternity,
   }[id];
 }
 
@@ -139,7 +148,7 @@ export type DungeonsResponse = {
   id: number;
   name: string;
   display_name: string;
-  type: "hero-dungeon" | "void-raid-dungeon" | "event-dungeon";
+  type: DungeonTypes;
   weekly_entry_limit: number;
   daily_entry_limit: number;
   characters_entries: {
