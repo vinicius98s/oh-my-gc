@@ -18,8 +18,8 @@ type DataContextType = {
   trackedCharacters: TrackedCharactersResponse;
   dungeons: DungeonsResponse;
   dungeonsEntries: DungeonsEntriesResponse;
-  playingCharacter: Character | null;
-  playingDungeon: string | null;
+  playingCharacter?: Character | null;
+  playingDungeon?: string | null;
   url: string;
 };
 
@@ -48,9 +48,9 @@ export function DataContextProvider({
 }) {
   const [port, setPort] = useState<number>();
   const [playingDungeon, setPlayingDungeon] = useState<string | null>(null);
-  const [playingCharacter, setPlayingCharacter] = useState<Character | null>(
-    null,
-  );
+  const [playingCharacter, setPlayingCharacter] = useState<
+    Character | null | undefined
+  >(null);
 
   const url = `http://localhost:${port}`;
 
