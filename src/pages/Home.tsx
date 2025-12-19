@@ -8,8 +8,8 @@ import { getCharacterById } from "../utils/characters";
 
 import DungeonsList from "../components/DungeonsList";
 import GameStatus from "../components/GameStatus";
+import TodayScheduleCard from "../components/TodayScheduleCard";
 import { formatDungeons } from "../utils/dungeons";
-import { cn } from "../utils/lib";
 
 export default function Home() {
   const {
@@ -50,9 +50,7 @@ export default function Home() {
     });
   };
 
-  const formattedDungeons = useMemo(() => {
-    return formatDungeons(dungeons, dungeonsEntries, trackedCharacters.length);
-  }, [dungeons, dungeonsEntries, trackedCharacters]);
+  const formattedDungeons = formatDungeons(dungeons, dungeonsEntries);
 
   const heroDungeons = formattedDungeons.filter(
     (d) => d.type === "hero-dungeon"
@@ -84,7 +82,7 @@ export default function Home() {
     .filter((d) => !!d);
 
   const isCurrentScheduleComplete =
-    todayDungeons.length > 0 &&
+    !currentTrackedChar ||
     todayDungeons.every((d) => {
       const dailyEntries =
         d!.charactersDailyEntries.find(
@@ -109,7 +107,7 @@ export default function Home() {
 
     // Find next character with incomplete schedule
     const otherTracked = trackedCharacters.filter(
-      (c) => c.id !== playingCharacter.id
+      (c) => c.id !== playingCharacter?.id
     );
 
     // Try to follow the order in trackedCharacters list which mimics user selection order usually
@@ -161,7 +159,7 @@ export default function Home() {
 
   if (!playingCharacter) {
     return (
-      <div className="h-screen flex items-center justify-center text-center">
+      <div className="h-screen flex items-center justify-center text-center text-white">
         Could not find any playing character.
         <br />
         Make sure to have the game open and running.
@@ -189,7 +187,7 @@ export default function Home() {
             </h2>
             <Button
               onClick={() => setIsScheduleBuilderOpen(true)}
-              className="text-xs px-3 py-1"
+              className="text-xs px-3 py-1 font-medium text-white"
             >
               Edit Schedule
             </Button>
@@ -226,64 +224,13 @@ export default function Home() {
                 }
 
                 return (
-                  <div
+                  <TodayScheduleCard
                     key={dungeon.id}
-                    className={cn(
-                      "flex-shrink-0 w-32 rounded-lg py-4 px-2 border flex flex-col items-center gap-2 group transition-colors",
-                      isComplete
-                        ? "bg-gray/10 border-white/5 opacity-60"
-                        : "bg-gray/30 border-white/10 hover:border-blue/50"
-                    )}
-                  >
-                    <div className="relative">
-                      <img
-                        src={dungeon.image}
-                        alt={dungeon.displayName}
-                        className={cn(
-                          "w-16 h-16 rounded shadow-md",
-                          isComplete ? "grayscale" : ""
-                        )}
-                      />
-                      {isComplete && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded backdrop-blur-[1px]">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="h-6 w-6 text-green-400"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1 items-center w-full h-full">
-                      <span
-                        className={cn(
-                          "text-sm text-center font-medium line-clamp-2 leading-tight",
-                          isComplete
-                            ? "text-gray-400 line-through"
-                            : "text-gray-200 group-hover:text-white"
-                        )}
-                      >
-                        {dungeon.displayName}
-                      </span>
-                      {progressText && (
-                        <span
-                          className={cn(
-                            "text-xs mt-auto",
-                            isComplete ? "text-green-500/70" : "text-blue-300"
-                          )}
-                        >
-                          {progressText}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    dungeon={dungeon}
+                    playingCharacterId={playingCharacter.id}
+                    isComplete={isComplete}
+                    progressText={progressText}
+                  />
                 );
               })
             ) : (

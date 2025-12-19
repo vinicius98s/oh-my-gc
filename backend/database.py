@@ -6,29 +6,15 @@ def get_dungeons(DB):
         cursor = DB.cursor()
         rows = cursor.execute("SELECT * FROM dungeons").fetchall()
         response = []
-        count_query = """
-            SELECT COUNT(de.id), c.id AS character_id FROM characters c
-            LEFT JOIN dungeons_entries de ON c.id = de.character_id
-            AND de.dungeon_id = ?
-            AND de.started_at >= date('now', 'weekday 3', '-7 days')
-            AND de.started_at < date('now', 'weekday 3', '+7 days')
-            WHERE c.tracking = TRUE GROUP BY c.id
-        """
         for row in rows:
-            id = row[0]
-            entries_rows = cursor.execute(count_query, (id,)).fetchall()
-            characters_entries = [{
-                "entries_count": entry_row[0],
-                "character_id": entry_row[1],
-            } for entry_row in entries_rows]
             response.append({
-                "id": id,
+                "id": row[0],
                 "name": row[1],
                 "display_name": row[2],
                 "type": row[3],
                 "weekly_entry_limit": row[4],
                 "daily_entry_limit": row[5],
-                "characters_entries": characters_entries
+                "accent_color": row[6],
             })
         return json.dumps({"data": response})
     except Exception as e:
@@ -39,22 +25,71 @@ def get_dungeons(DB):
 def get_dungeons_entries(DB):
     try:
         cursor = DB.cursor()
-        query = """
+        
+        # Get raw entries for the current week
+        entries_query = """
             SELECT * FROM dungeons_entries
             WHERE started_at >= date('now', 'weekday 3', '-7 days')
             AND started_at < date('now', 'weekday 3', '+7 days')
+            AND finished_at IS NOT NULL
         """
-        rows = cursor.execute(query).fetchall()
-        response = [{
+        rows = cursor.execute(entries_query).fetchall()
+        entries = [{
             "id": row[0],
             "dungeon_id": row[1],
             "character_id": row[2],
             "started_at": row[3],
             "finished_at": row[4]
         } for row in rows]
-        return json.dumps({"data": response})
-    except Exception:
+        
+        # Get weekly entry counts per character per dungeon
+        count_query = """
+            SELECT de.dungeon_id, c.id AS character_id, COUNT(de.id) as entries_count
+            FROM characters c
+            LEFT JOIN dungeons_entries de ON c.id = de.character_id
+            AND de.started_at >= date('now', 'weekday 3', '-7 days')
+            AND de.started_at < date('now', 'weekday 3', '+7 days')
+            AND de.finished_at IS NOT NULL
+            WHERE c.tracking = TRUE
+            GROUP BY de.dungeon_id, c.id
+        """
+        count_rows = cursor.execute(count_query).fetchall()
+        characters_entries = [{
+            "dungeon_id": row[0],
+            "character_id": row[1],
+            "entries_count": row[2]
+        } for row in count_rows if row[0] is not None]
+        
+        # Get average completion time per character per dungeon
+        avg_time_query = """
+            SELECT de.dungeon_id, c.id AS character_id, AVG(
+                (julianday(de.finished_at) - julianday(de.started_at)) * 86400
+            ) as avg_time
+            FROM characters c
+            LEFT JOIN dungeons_entries de ON c.id = de.character_id
+            AND de.finished_at IS NOT NULL
+            AND de.finished_at != de.started_at
+            WHERE c.tracking = TRUE
+            GROUP BY de.dungeon_id, c.id
+        """
+        avg_time_rows = cursor.execute(avg_time_query).fetchall()
+        characters_avg_completion_time = [{
+            "dungeon_id": row[0],
+            "character_id": row[1],
+            "avg_time": row[2]
+        } for row in avg_time_rows if row[0] is not None]
+        
+        return json.dumps({
+            "data": {
+                "entries": entries,
+                "characters_entries": characters_entries,
+                "characters_avg_completion_time": characters_avg_completion_time
+            }
+        })
+    except Exception as e:
+        print(e)
         return None
+
 
 
 def get_tracked_characters(DB):
@@ -132,7 +167,9 @@ def update_tracked_characters(DB, payload):
 def update_dungeon_entries(DB, dungeon_id, character_id, value, update_mode="weekly"):
     try:
         cursor = DB.cursor()
-        
+        delete_query = "DELETE FROM dungeons_entries WHERE finished_at IS NULL AND character_id = ? AND dungeon_id = ?"
+        cursor.execute(delete_query, (character_id, dungeon_id))
+ 
         date_filter = ""
         if update_mode == "daily":
             # Filter for today only

@@ -30,11 +30,9 @@ export default function SchedulerBuilder({
   initialSchedules,
   onConfirm,
 }: SchedulerBuilderProps) {
-  const { dungeons, dungeonsEntries, trackedCharacters } = useDataContext();
+  const { dungeons, dungeonsEntries } = useDataContext();
 
-  const formattedDungeons = useMemo(() => {
-    return formatDungeons(dungeons, dungeonsEntries, trackedCharacters.length);
-  }, [dungeons, dungeonsEntries, trackedCharacters]);
+  const formattedDungeons = formatDungeons(dungeons, dungeonsEntries);
 
   // Select first character by default if available
   const [selectedBuilderCharacterId, setSelectedBuilderCharacterId] = useState<
@@ -42,7 +40,7 @@ export default function SchedulerBuilder({
   >(selectedCharacterIds.length > 0 ? selectedCharacterIds[0] : null);
 
   const [schedules, setSchedules] = useState<ScheduleState>(
-    initialSchedules || {},
+    initialSchedules || {}
   );
   const [openModalDay, setOpenModalDay] = useState<string | null>(null);
 
@@ -52,7 +50,7 @@ export default function SchedulerBuilder({
       selectedBuilderCharacterId
         ? getCharacterById(selectedBuilderCharacterId)
         : null,
-    [selectedBuilderCharacterId],
+    [selectedBuilderCharacterId]
   );
 
   const handleSaveDungeons = (dungeonIds: number[]) => {
@@ -73,7 +71,7 @@ export default function SchedulerBuilder({
       return true;
     }
     return Object.values(characterSchedule).every(
-      (dayDungeons) => dayDungeons.length === 0,
+      (dayDungeons) => dayDungeons.length === 0
     );
   };
 
@@ -82,7 +80,7 @@ export default function SchedulerBuilder({
   };
 
   const currentIndex = selectedCharacterIds.indexOf(
-    selectedBuilderCharacterId!,
+    selectedBuilderCharacterId!
   );
   const isLastCharacter = currentIndex === selectedCharacterIds.length - 1;
 
@@ -164,16 +162,16 @@ export default function SchedulerBuilder({
                 {DAYS.map((day) => {
                   const dungeonIds = getDungeonsForDay(
                     selectedBuilderCharacterId!,
-                    day,
+                    day
                   );
                   return (
                     <div
                       key={day}
                       className="rounded-md bg-gray/30 border border-white/5 p-2 min-h-[180px] flex flex-col gap-1"
                     >
-                      {dungeonIds.map((dungeonId) => {
+                      {dungeonIds.sort().map((dungeonId) => {
                         const dungeon = formattedDungeons.find(
-                          (d) => d.id === dungeonId,
+                          (d) => d.id === dungeonId
                         );
                         if (!dungeon) return null;
 

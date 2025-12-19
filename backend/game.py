@@ -53,7 +53,7 @@ class GameState:
     def __str__(self):
         return f"GameState(\n\tcharacter={self.character}, \n\tdungeon={self.dungeon}, \n\tis_playing={self.is_playing}\n)"
 
-    def match_completed_dungeon(self, entry_id):
+    def match_completed_dungeon(self, entry_id, dungeon_id):
         if self.match_lobby_character():
             self.is_playing = False
         else:
@@ -70,12 +70,7 @@ class GameState:
             text = pytesseract.image_to_string(
                 thresh, config="--oem 3 --psm 6")
 
-            match = fuzz.partial_ratio(text, "COMPLETE")
-            if (
-                text.startswith("COMP") or
-                text.endswith("LETE") or
-                match >= 80
-            ):
+            if self.is_dungeon_completed(dungeon_id, text):
                 cursor = self.DB.cursor()
                 update = """
                     UPDATE dungeons_entries
@@ -90,6 +85,37 @@ class GameState:
                 )
                 self.is_playing = False
                 return True
+
+    def match_completed_text(self, text):
+        match = fuzz.partial_ratio(text, "COMPLETE")
+        if (
+            text.startswith("COMP") or
+            text.endswith("LETE") or
+            match >= 80
+        ):
+            return True
+        return False
+
+    def match_failed_text(self, text):
+        match = fuzz.partial_ratio(text, "FAILED")
+        if (
+            text.startswith("FAIL") or
+            text.endswith("ILED") or
+            match >= 80
+        ):
+            return True
+        return False
+
+    def is_dungeon_completed(self, dungeon_id, text):
+        # TOD
+        if dungeon_id == 5:
+            if self.match_failed_text(text) or self.match_completed_text(text):
+                return True
+        else:
+            if self.match_completed_text(text):
+                return True
+
+        return False
 
     def match_playing_character(self):
         x, y, w, h = (65, 10, 180, 150)
@@ -160,13 +186,13 @@ class GameState:
 
                 self.dungeon = dungeon
                 self.is_playing = True
-                return entry_id
+                return (entry_id, dungeon_id)
 
     def match_lobby_character(self):
         x, y, w, h = (18, 1020, 75, 55)
         roi = self.img[y:y+h, x:x+w]
 
-        if np.max(roi) < 30:
+        if np.std(roi) < 10:
             return False
 
         character_match = (0, "")

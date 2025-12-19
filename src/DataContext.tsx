@@ -13,6 +13,7 @@ import {
   getDungeons,
   getDungeonsEntries,
 } from "./utils/dungeons";
+import Loading from "./components/Loading";
 
 type DataContextType = {
   trackedCharacters: TrackedCharactersResponse;
@@ -26,7 +27,11 @@ type DataContextType = {
 const DataContext = createContext<DataContextType>({
   trackedCharacters: [],
   dungeons: [],
-  dungeonsEntries: [],
+  dungeonsEntries: {
+    entries: [],
+    characters_entries: [],
+    characters_avg_completion_time: [],
+  },
   playingCharacter: null,
   playingDungeon: null,
   url: "",
@@ -106,7 +111,7 @@ export function DataContextProvider({
   if (!port || !trackedCharacters || !dungeons || !dungeonsEntries) {
     return (
       <div className="h-screen items-center justify-center flex">
-        Loading...
+        <Loading />
       </div>
     );
   }

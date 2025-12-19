@@ -2,12 +2,11 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Button from "../components/Button";
-import ScheduleBuilder, {
-  ScheduleState,
-} from "../components/ScheduleBuilder";
+import ScheduleBuilder, { ScheduleState } from "../components/ScheduleBuilder";
 import { useDataContext } from "../DataContext";
 import { characters } from "../utils/characters";
 import { cn } from "../utils/lib";
+import ohMyGCLogo from "../assets/logo.png";
 
 export default function Onboarding() {
   const [selectedCharacters, setSelectedCharacters] = useState<number[]>([]);
@@ -24,7 +23,7 @@ export default function Onboarding() {
     setSelectedCharacters(
       selectedCharacters.includes(characterId)
         ? selectedCharacters.filter((c) => c !== characterId)
-        : [...selectedCharacters, characterId],
+        : [...selectedCharacters, characterId]
     );
   };
 
@@ -57,23 +56,22 @@ export default function Onboarding() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["tracked_characters"] });
         },
-      },
+      }
     );
   };
 
   return (
-    <div className="flex flex-col h-full pt-8 px-10 overflow-hidden">
-      <h1 className="font-semibold text-xl">Welcome to Oh My GC!</h1>
-      <p className="text-sm">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua.
-      </p>
+    <div className="flex flex-col h-full pt-4 px-10 overflow-hidden text-white">
+      <div className="flex items-center gap-2">
+        <h1 className="font-semibold text-xl">Welcome to</h1>
+        <img src={ohMyGCLogo} className="w-32" />
+      </div>
 
       <div className="flex gap-4 items-center justify-center my-4 mb-6">
         <Button
           className={cn(
             "rounded-full text-sm size-8 p-0 items-center justify-center flex",
-            step !== 1 ? "from-light-gray to-gray" : "",
+            step !== 1 ? "from-light-gray to-gray" : ""
           )}
           onClick={() => setStep(1)}
         >

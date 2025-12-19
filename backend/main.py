@@ -16,6 +16,7 @@ shutdown_event = threading.Event()
 
 def game_loop(args, broadcaster):
     dungeon_entry_id = None
+    dungeon_id = None
     last_character_id = None
     print("[game_loop]: Starting game loop...")
 
@@ -36,12 +37,12 @@ def game_loop(args, broadcaster):
             if game_state.character is not None:
                 last_character_id = game_state.character
 
-            entry_id = game_state.match_loading_dungeon(last_character_id)
-            if entry_id:
-                dungeon_entry_id = entry_id
+            entry = game_state.match_loading_dungeon(last_character_id)
+            if entry is not None:
+                (dungeon_entry_id, dungeon_id) = entry
 
             game_state.match_playing_character()
-            game_state.match_completed_dungeon(dungeon_entry_id)
+            game_state.match_completed_dungeon(dungeon_entry_id, dungeon_id)
 
             broadcaster.broadcast(
                 event="character",

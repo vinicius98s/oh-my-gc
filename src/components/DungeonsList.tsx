@@ -3,11 +3,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DungeonCard from "./DungeonCard";
 
 import { useDataContext } from "../DataContext";
-import { FormattedDungeon } from "../utils/dungeons";
+import { Dungeon } from "../utils/dungeons";
 
 type Props = {
   playingCharacterId: number;
-  dungeons: FormattedDungeon[];
+  dungeons: Dungeon[];
 };
 
 export default function DungeonsList({ playingCharacterId, dungeons }: Props) {
@@ -32,7 +32,7 @@ export default function DungeonsList({ playingCharacterId, dungeons }: Props) {
   const onEditEntries = (
     dungeonId: number,
     value: number,
-    mode: "weekly" | "daily",
+    mode: "weekly" | "daily"
   ) => {
     mutation.mutate(
       { dungeonId, value, characterId: playingCharacterId, update_mode: mode },
@@ -40,7 +40,7 @@ export default function DungeonsList({ playingCharacterId, dungeons }: Props) {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
         },
-      },
+      }
     );
   };
 

@@ -13,6 +13,35 @@
   --color-light-blue: #82c1f7;
 
   --animate-playing: playing 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-bounce-soft: bounce-soft 1s ease-in-out infinite;
+  --animate-wiggle: wiggle 2s ease-in-out infinite;
+
+  @keyframes bounce-soft {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-14px);
+    }
+  }
+
+
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+
+    25% {
+      transform: rotate(1deg);
+    }
+
+    75% {
+      transform: rotate(-1deg);
+    }
+  }
 
   @keyframes playing {
     0%,
@@ -32,7 +61,6 @@
 
 * {
   font-family: "Tomorrow", sans-serif;
-  @apply text-white;
 }
 
 body {

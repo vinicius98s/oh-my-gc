@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { cn } from "../utils/lib";
 
 type Props = {
   defaultValue?: number;
@@ -36,11 +37,14 @@ export default function NumberInput({
 
   return (
     <div
-      className={`inline-flex border border-blue rounded overflow-hidden ${className || ""}`}
+      className={cn(
+        "inline-flex border border-blue rounded overflow-hidden",
+        className
+      )}
     >
       <input
         type="number"
-        className="w-16 px-2 py-1 text-center focus:outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="w-8 px-2 py-1 text-center focus:outline-none appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         value={value}
         readOnly
       />

@@ -24,15 +24,10 @@ export type Dungeon = {
   image: string;
   weeklyEntryLimit: number;
   dailyEntryLimit: number;
+  accentColor: string;
+  charactersAvgCompletionTime: { character_id: number; avg_time: number | null }[];
   charactersWeeklyEntries: { entries_count: number; character_id: number }[];
   charactersDailyEntries: { entries_count: number; character_id: number }[];
-};
-
-export type FormattedDungeon = Dungeon & {
-  totalCharactersEntries: number;
-  allCharactersEntries: number;
-  totalDailyCharactersEntries: number;
-  allDailyCharactersEntries: number;
 };
 
 function getDungeonImage(id: number) {
@@ -61,7 +56,7 @@ export function getCharacterDungeonEntries(
   dungeonId: number,
   characterId: number,
 ) {
-  return dungeonsEntries.filter(
+  return dungeonsEntries.entries.filter(
     ({ dungeon_id, character_id }) =>
       dungeon_id === dungeonId && character_id === characterId,
   ).length;
@@ -73,7 +68,7 @@ export function getCharacterDailyEntries(
   characterId: number,
 ) {
   const today = new Date().toDateString();
-  return dungeonsEntries.filter(
+  return dungeonsEntries.entries.filter(
     ({ dungeon_id, character_id, started_at }) =>
       dungeon_id === dungeonId &&
       character_id === characterId &&
@@ -84,7 +79,6 @@ export function getCharacterDailyEntries(
 export function formatDungeons(
   dungeons: DungeonsResponse,
   dungeonsEntries: DungeonsEntriesResponse,
-  trackedCharactersCount: number,
 ) {
   return dungeons.map(
     ({
@@ -94,23 +88,20 @@ export function formatDungeons(
       display_name,
       weekly_entry_limit,
       daily_entry_limit,
-      characters_entries,
+      accent_color,
     }) => {
-      // Calculate daily entries map for all characters
       const dailyEntriesMap = new Map<number, number>();
       const today = new Date().toDateString();
-      let allDailyCharactersEntries = 0;
 
-      dungeonsEntries.forEach((entry) => {
+      dungeonsEntries.entries.forEach((entry) => {
         if (
           entry.dungeon_id === id &&
           new Date(entry.started_at + "Z").toDateString() === today
         ) {
           dailyEntriesMap.set(
             entry.character_id,
-            (dailyEntriesMap.get(entry.character_id) || 0) + 1,
+            (dailyEntriesMap.get(entry.character_id) || 0) + 1
           );
-          allDailyCharactersEntries++;
         }
       });
 
@@ -118,8 +109,24 @@ export function formatDungeons(
         ([character_id, entries_count]) => ({
           character_id,
           entries_count,
-        }),
+        })
       );
+
+      // Get weekly entries for this dungeon from aggregated data
+      const charactersWeeklyEntries = dungeonsEntries.characters_entries
+        .filter((entry) => entry.dungeon_id === id)
+        .map(({ character_id, entries_count }) => ({
+          character_id,
+          entries_count,
+        }));
+
+      // Get avg completion time for this dungeon from aggregated data
+      const charactersAvgCompletionTime = dungeonsEntries.characters_avg_completion_time
+        .filter((entry) => entry.dungeon_id === id)
+        .map(({ character_id, avg_time }) => ({
+          character_id,
+          avg_time,
+        }));
 
       return {
         id,
@@ -129,19 +136,27 @@ export function formatDungeons(
         image: getDungeonImage(id),
         weeklyEntryLimit: weekly_entry_limit,
         dailyEntryLimit: daily_entry_limit,
-        totalCharactersEntries:
-          (weekly_entry_limit || 0) * trackedCharactersCount,
-        allCharactersEntries: dungeonsEntries.filter(
-          ({ dungeon_id }) => dungeon_id === id,
-        ).length,
-        totalDailyCharactersEntries:
-          (daily_entry_limit || 0) * trackedCharactersCount,
-        allDailyCharactersEntries: allDailyCharactersEntries,
-        charactersWeeklyEntries: characters_entries, // From DB (Weekly)
-        charactersDailyEntries: charactersDailyEntries, // Calculated (Daily)
+        accentColor: accent_color,
+        charactersAvgCompletionTime: charactersAvgCompletionTime,
+        charactersWeeklyEntries: charactersWeeklyEntries,
+        charactersDailyEntries: charactersDailyEntries,
       };
-    },
+    }
   );
+}
+
+
+export function formatDungeonAverageTime(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || seconds <= 0) return "--";
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
 }
 
 export type DungeonsResponse = {
@@ -151,10 +166,7 @@ export type DungeonsResponse = {
   type: DungeonTypes;
   weekly_entry_limit: number;
   daily_entry_limit: number;
-  characters_entries: {
-    entries_count: number;
-    character_id: number;
-  }[];
+  accent_color: string;
 }[];
 
 export async function getDungeons(baseUrl: string) {
@@ -163,13 +175,31 @@ export async function getDungeons(baseUrl: string) {
   return data;
 }
 
-export type DungeonsEntriesResponse = {
+export type DungeonEntry = {
   id: number;
   dungeon_id: number;
   character_id: number;
   started_at: string;
   finished_at: string;
-}[];
+};
+
+export type CharacterEntriesAggregated = {
+  dungeon_id: number;
+  character_id: number;
+  entries_count: number;
+};
+
+export type CharacterAvgCompletionTime = {
+  dungeon_id: number;
+  character_id: number;
+  avg_time: number | null;
+};
+
+export type DungeonsEntriesResponse = {
+  entries: DungeonEntry[];
+  characters_entries: CharacterEntriesAggregated[];
+  characters_avg_completion_time: CharacterAvgCompletionTime[];
+};
 
 export async function getDungeonsEntries(baseUrl: string) {
   const response = await fetch(`${baseUrl}/dungeons_entries`);
