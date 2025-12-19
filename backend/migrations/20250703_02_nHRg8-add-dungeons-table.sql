@@ -99,7 +99,7 @@ VALUES (
         'hero-dungeon',
         NULL,
         NULL,
-        '#1e1b4b'
+        '#e64569'
     ),
     (
         'angry-boss',

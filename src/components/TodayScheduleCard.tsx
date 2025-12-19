@@ -61,7 +61,7 @@ export default function TodayScheduleCard({
       <div className="flex flex-col gap-1 items-center w-full h-full">
         <span
           className={cn(
-            "text-sm text-center font-medium line-clamp-2 leading-tight",
+            "h-9 text-sm text-center font-medium line-clamp-2 leading-tight",
             isComplete
               ? "text-gray-400 line-through"
               : "text-gray-200 group-hover:text-white"
@@ -71,12 +71,7 @@ export default function TodayScheduleCard({
         </span>
 
         {progressText && (
-          <span
-            className={cn(
-              "text-xs font-semibold",
-              isComplete ? "text-green-500/70" : "text-blue-300"
-            )}
-          >
+          <span className="text-xs font-semibold text-white">
             {progressText}
           </span>
         )}

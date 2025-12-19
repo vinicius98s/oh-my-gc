@@ -38,7 +38,7 @@ export default function NumberInput({
   return (
     <div
       className={cn(
-        "inline-flex border border-blue rounded overflow-hidden",
+        "inline-flex border border-blue rounded overflow-hidden text-white",
         className
       )}
     >

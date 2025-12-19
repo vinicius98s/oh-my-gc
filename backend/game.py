@@ -6,6 +6,7 @@ import pywinctl as pwc
 import numpy as np
 import re
 from rapidfuzz import fuzz
+
 from utils import parse_args
 
 
@@ -42,20 +43,21 @@ DUNGEON_TEMPLATES = load_templates(
 
 
 class GameState:
-    def __init__(self, character, img, DB, broadcaster):
+    def __init__(self, character_id, img, DB, broadcaster):
         self.img = img
-        self.character = character
-        self.dungeon = None
-        self.is_playing = False
+        self.character_id = character_id
         self.DB = DB
         self.broadcaster = broadcaster
 
     def __str__(self):
-        return f"GameState(\n\tcharacter={self.character}, \n\tdungeon={self.dungeon}, \n\tis_playing={self.is_playing}\n)"
+        return f"GameState(\n\tcharacter_id={self.character_id}\n)"
 
     def match_completed_dungeon(self, entry_id, dungeon_id):
         if self.match_lobby_character():
-            self.is_playing = False
+            if dungeon_id in [5, 6]:
+                self.complete_dungeon_entry(entry_id)
+
+            return True
         else:
             x, y, w, h = (565, 495, 800, 90)
             roi = self.img[y:y+h, x:x+w]
@@ -70,21 +72,25 @@ class GameState:
             text = pytesseract.image_to_string(
                 thresh, config="--oem 3 --psm 6")
 
-            if self.is_dungeon_completed(dungeon_id, text):
-                cursor = self.DB.cursor()
-                update = """
-                    UPDATE dungeons_entries
-                    SET finished_at = CURRENT_TIMESTAMP, character_id = ?
-                    WHERE id = ?
-                """
-                cursor.execute(update, (self.character, entry_id))
-                self.DB.commit()
-                self.broadcaster.broadcast(
-                    event="dungeons",
-                    data={"type": "completed", "dungeon_entry_id": entry_id}
-                )
-                self.is_playing = False
+            if self.is_dungeon_completed(text):
+                self.complete_dungeon_entry(entry_id)
                 return True
+
+            return False
+
+    def complete_dungeon_entry(self, entry_id):
+        cursor = self.DB.cursor()
+        update = """
+            UPDATE dungeons_entries
+            SET finished_at = CURRENT_TIMESTAMP, character_id = ?
+            WHERE id = ?
+        """
+        cursor.execute(update, (self.character_id, entry_id))
+        self.DB.commit()
+        self.broadcaster.broadcast(
+            event="dungeons",
+            data={"type": "completed", "dungeon_entry_id": entry_id}
+        )
 
     def match_completed_text(self, text):
         match = fuzz.partial_ratio(text, "COMPLETE")
@@ -106,14 +112,9 @@ class GameState:
             return True
         return False
 
-    def is_dungeon_completed(self, dungeon_id, text):
-        # TOD
-        if dungeon_id == 5:
-            if self.match_failed_text(text) or self.match_completed_text(text):
-                return True
-        else:
-            if self.match_completed_text(text):
-                return True
+    def is_dungeon_completed(self, text):
+        if self.match_failed_text(text) or self.match_completed_text(text):
+            return True
 
         return False
 
@@ -137,8 +138,7 @@ class GameState:
             character_id = cursor.execute(
                 "SELECT id FROM characters WHERE name = ?",
                 (character,)).fetchone()[0]
-            self.character = character_id
-            self.is_playing = True
+            self.character_id = character_id
             return character_id
 
     def match_loading_dungeon(self, character_id):
@@ -184,8 +184,6 @@ class GameState:
                     data={"type": "start", "dungeon": dungeon}
                 )
 
-                self.dungeon = dungeon
-                self.is_playing = True
                 return (entry_id, dungeon_id)
 
     def match_lobby_character(self):
@@ -215,9 +213,10 @@ class GameState:
                 event="dungeons",
                 data={"type": "not_playing"}
             )
-            self.character = character_id
-            self.is_playing = False
-            self.dungeon = None
+            self.character_id = character_id
+            return character_id
+
+        return None
 
 
 def get_window():

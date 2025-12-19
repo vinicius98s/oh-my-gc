@@ -34,19 +34,21 @@ def game_loop(args, broadcaster):
             game_state = GameState(last_character_id, img, DB, broadcaster)
 
             game_state.match_lobby_character()
-            if game_state.character is not None:
-                last_character_id = game_state.character
+            if game_state.character_id is not None:
+                last_character_id = game_state.character_id
 
             entry = game_state.match_loading_dungeon(last_character_id)
             if entry is not None:
                 (dungeon_entry_id, dungeon_id) = entry
 
-            game_state.match_playing_character()
-            game_state.match_completed_dungeon(dungeon_entry_id, dungeon_id)
+            is_completed = game_state.match_completed_dungeon(dungeon_entry_id, dungeon_id)
+            if is_completed:
+                dungeon_id = None
+                dungeon_entry_id = None
 
             broadcaster.broadcast(
                 event="character",
-                data=game_state.character
+                data=game_state.character_id
             )
 
     print("[game_loop]: Game loop has shut down")
