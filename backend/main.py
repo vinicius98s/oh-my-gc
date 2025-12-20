@@ -7,6 +7,9 @@ from functools import partial
 from game import GameState
 import game
 from sse import SSEBroadcaster
+from yoyo import read_migrations
+from yoyo.backends import SQLiteBackend
+from yoyo.connections import parse_uri
 from utils import parse_args
 from server import Handler
 
@@ -24,13 +27,13 @@ def game_loop(args, broadcaster):
         if shutdown_event.wait(timeout=0.5):
             break
 
-        with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+        with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
             window = game.get_window()
             if window is None:
                 print("[game_loop]: Game window not found")
                 continue
 
-            img = game.take_screenshot(window, f"{args.data}/screenshot.png")
+            img = game.take_screenshot(window, f"{args.user_data}/screenshot.png")
             game_state = GameState(last_character_id, img, DB, broadcaster)
 
             game_state.match_lobby_character()
@@ -59,8 +62,25 @@ def server(httpd):
     print("[server]: Server has shut down")
 
 
+def run_migrations(args):
+    print(f"[migrations]: Applying migrations from {args.migrations} to {args.user_data}/oh-my-gc.sqlite3")
+    db_path = f"{args.user_data}/oh-my-gc.sqlite3"
+    uri = parse_uri(f"sqlite:///{db_path}")
+    backend = SQLiteBackend(uri, "_yoyo_migration")
+    migrations = read_migrations(args.migrations)
+
+    # Initialize yoyo's internal tables if they don't exist
+    backend.init_database()
+
+    with backend.lock():
+        backend.apply_migrations(backend.to_apply(migrations))
+    print("[migrations]: Migrations applied successfully")
+
 def main():
     args = parse_args()
+    
+    run_migrations(args)
+
     broadcaster = SSEBroadcaster()
     handler = partial(Handler, broadcaster=broadcaster)
     httpd = socketserver.ThreadingTCPServer(("", args.port), handler)

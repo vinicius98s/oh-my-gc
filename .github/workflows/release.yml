@@ -1,0 +1,53 @@
+name: Release Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Tesseract (for bundling)
+        run: |
+          choco install tesseract --no-progress
+          robocopy "C:/Program Files/Tesseract-OCR" "backend/third-party/tesseract-win64" /E /NFL /NDL /NJH /NJS /nc /ns /np
+          if ($LastExitCode -le 3) { $global:LastExitCode = 0 }
+
+      - name: Build Backend Executable
+        run: |
+          cd backend
+          pyinstaller main.spec
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Publish Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run publish

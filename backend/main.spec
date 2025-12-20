@@ -1,9 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+import os
+import sys
+sys.path.insert(0, os.path.abspath('.'))
+
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[os.path.abspath('.')],
     binaries=[],
     datas=[],
     hiddenimports=[],

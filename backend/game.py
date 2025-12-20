@@ -5,6 +5,10 @@ import mss
 import pywinctl as pwc
 import numpy as np
 import re
+import win32gui
+import win32ui
+import win32con
+import ctypes
 from rapidfuzz import fuzz
 
 from utils import parse_args
@@ -15,7 +19,7 @@ if args.TESSERACT_PATH:
     pytesseract.pytesseract.tesseract_cmd = args.TESSERACT_PATH
 
 
-TEMPLATES_BASE_PATH = os.path.join(args.data, "templates")
+TEMPLATES_BASE_PATH = args.templates
 
 
 def load_templates(path, gray=False):
@@ -243,9 +247,9 @@ def capture_template(template_name, template_type):
             raise Exception("Invalid template type")
 
         if template_type == "in-game":
-            path = f"{args.data}/templates/characters/in-game/{template_name}.png"
+            path = f"{args.templates}/characters/in-game/{template_name}.png"
         else:
-            path = f"{args.data}/templates/{template_type}/{template_name}.png"
+            path = f"{args.templates}/{template_type}/{template_name}.png"
 
         screenshot = sct.grab({
             "top": y,
@@ -257,16 +261,37 @@ def capture_template(template_name, template_type):
 
 
 def take_screenshot(window, image_path):
-    with mss.mss() as sct:
-        screenshot = sct.grab({
-            "top": window.top,
-            "left": window.left,
-            "width": window.width,
-            "height": window.height
-        })
-        mss.tools.to_png(screenshot.rgb, screenshot.size, output=image_path)
+    hwnd = window.getHandle()
+    w, h = window.width, window.height
 
-    img = cv2.imread(image_path)
+    hwndDC = win32gui.GetWindowDC(hwnd)
+    mfcDC = win32ui.CreateDCFromHandle(hwndDC)
+    saveDC = mfcDC.CreateCompatibleDC()
+
+    saveBitMap = win32ui.CreateBitmap()
+    saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+
+    saveDC.SelectObject(saveBitMap)
+
+    result = ctypes.windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 2)
+
+    if result == 0:
+        saveDC.BitBlt((0, 0), (w, h), mfcDC, (0, 0), win32con.SRCCOPY)
+
+    bmpinfo = saveBitMap.GetInfo()
+    bmpstr = saveBitMap.GetBitmapBits(True)
+
+    img = np.frombuffer(bmpstr, dtype='uint8')
+    img.shape = (bmpinfo['bmHeight'], bmpinfo['bmWidth'], 4)
+
+    win32gui.DeleteObject(saveBitMap.GetHandle())
+    saveDC.DeleteDC()
+    mfcDC.DeleteDC()
+    win32gui.ReleaseDC(hwnd, hwndDC)
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+    cv2.imwrite(image_path, img)
     if img.shape[0] != 1080 or img.shape[1] != 1920:
         img = cv2.resize(img, (1920, 1080))
+
     return img

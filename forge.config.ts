@@ -1,5 +1,6 @@
 import type { ForgeConfig } from "@electron-forge/shared-types";
 import { MakerSquirrel } from "@electron-forge/maker-squirrel";
+import { PublisherGithub } from "@electron-forge/publisher-github";
 import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-natives";
 import { WebpackPlugin } from "@electron-forge/plugin-webpack";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
@@ -14,12 +15,28 @@ const config: ForgeConfig = {
     extraResource: [
       "./backend/dist/main.exe",
       "./backend/third-party",
-      "./backend/data",
+      "./backend/templates",
+      "./backend/migrations",
     ],
     icon: "./src/assets/icon",
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({})],
+  makers: [
+    new MakerSquirrel({
+      setupExe: "OhMyGC-Setup.exe",
+      setupIcon: "./src/assets/icon.ico",
+    }),
+  ],
+  publishers: [
+    new PublisherGithub({
+      repository: {
+        owner: "vinicius98s",
+        name: "oh-my-gc",
+      },
+      prerelease: false,
+      draft: true,
+    }),
+  ],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new WebpackPlugin({

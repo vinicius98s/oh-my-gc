@@ -32,7 +32,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             args = parse_args()
-            with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 content_len = int(self.headers.get("Content-Length"))
             body = self.rfile.read(content_len).decode("utf-8")
             payload = json.loads(body)
@@ -46,7 +46,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
 
                 args = parse_args()
-                with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+                with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                     content_len = int(self.headers.get("Content-Length"))
                     body = json.loads(self.rfile.read(
                         content_len).decode("utf-8"))
@@ -91,7 +91,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             args = parse_args()
-            with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 response = get_dungeons(DB)
                 if response is None:
                     self.send_error(500, "Server Error")
@@ -104,7 +104,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             args = parse_args()
-            with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 response = get_dungeons_entries(DB)
                 if response is None:
                     self.send_error(500, "Server Error")
@@ -117,7 +117,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             args = parse_args()
-            with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 response = get_statistics(DB)
                 if response is None:
                     self.send_error(500, "Server Error")
@@ -130,7 +130,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             args = parse_args()
-            with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 response = get_tracked_characters(DB)
                 if response is None:
                     self.send_error(500, "Server Error")

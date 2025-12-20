@@ -1,8 +1,12 @@
 {
   "name": "oh-my-gc",
-  "productName": "oh-my-gc",
+  "productName": "Oh My GC",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Grand Chase Dungeon Tracker and Character Manager",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vinicius98s/oh-my-gc"
+  },
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -26,6 +30,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
     "@electron-forge/plugin-fuses": "^7.8.1",
     "@electron-forge/plugin-webpack": "^7.8.1",
+    "@electron-forge/publisher-github": "^7.10.2",
     "@electron/fuses": "^1.8.0",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
@@ -55,6 +60,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^4.1.11",
+    "update-electron-app": "^3.1.2"
   }
 }
