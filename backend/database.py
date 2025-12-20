@@ -239,3 +239,71 @@ def update_dungeon_entries(DB, dungeon_id, character_id, value):
         return json.dumps({"data": "ok"})
     except Exception:
         return None
+
+
+def get_statistics(DB):
+    try:
+        cursor = DB.cursor()
+        
+        # 1. Total runs
+        total_runs_query = "SELECT COUNT(*) FROM dungeons_entries WHERE finished_at IS NOT NULL"
+        total_runs = cursor.execute(total_runs_query).fetchone()[0]
+        
+        # 2. Total time spent (seconds)
+        total_time_query = """
+            SELECT SUM((julianday(finished_at) - julianday(started_at)) * 86400)
+            FROM dungeons_entries
+            WHERE finished_at IS NOT NULL AND finished_at != started_at
+        """
+        total_time_spent = cursor.execute(total_time_query).fetchone()[0] or 0
+        
+        # 3. Most played dungeon
+        most_played_dungeon_query = """
+            SELECT dungeon_id, COUNT(*) as count
+            FROM dungeons_entries
+            WHERE finished_at IS NOT NULL
+            GROUP BY dungeon_id
+            ORDER BY count DESC
+            LIMIT 1
+        """
+        most_played_dungeon_row = cursor.execute(most_played_dungeon_query).fetchone()
+        most_played_dungeon = {
+            "id": most_played_dungeon_row[0],
+            "count": most_played_dungeon_row[1]
+        } if most_played_dungeon_row else None
+        
+        # 4. Most played character
+        most_played_character_query = """
+            SELECT character_id, COUNT(*) as count
+            FROM dungeons_entries
+            WHERE finished_at IS NOT NULL
+            GROUP BY character_id
+            ORDER BY count DESC
+            LIMIT 1
+        """
+        most_played_character_row = cursor.execute(most_played_character_query).fetchone()
+        most_played_character = {
+            "id": most_played_character_row[0],
+            "count": most_played_character_row[1]
+        } if most_played_character_row else None
+
+        # 5. Global average clear time
+        avg_clear_time_query = """
+            SELECT AVG((julianday(finished_at) - julianday(started_at)) * 86400)
+            FROM dungeons_entries
+            WHERE finished_at IS NOT NULL AND finished_at != started_at
+        """
+        avg_clear_time = cursor.execute(avg_clear_time_query).fetchone()[0] or 0
+
+        return json.dumps({
+            "data": {
+                "total_runs": total_runs,
+                "total_time_spent": total_time_spent,
+                "most_played_dungeon": most_played_dungeon,
+                "most_played_character": most_played_character,
+                "avg_clear_time": avg_clear_time
+            }
+        })
+    except Exception as e:
+        print(f"Error getting statistics: {e}")
+        return None

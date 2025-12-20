@@ -31,7 +31,7 @@ export type Dungeon = {
   charactersDailyEntries: { entries_count: number; character_id: number }[];
 };
 
-function getDungeonImage(id: number) {
+export function getDungeonImage(id: number) {
   return {
     1: theCrucible,
     2: sanctumOfDestruction,
@@ -208,5 +208,19 @@ export type DungeonsEntriesResponse = {
 export async function getDungeonsEntries(baseUrl: string) {
   const response = await fetch(`${baseUrl}/dungeons_entries`);
   const { data } = (await response.json()) as { data: DungeonsEntriesResponse };
+  return data;
+}
+
+export type StatisticsData = {
+  total_runs: number;
+  total_time_spent: number;
+  most_played_dungeon: { id: number; count: number } | null;
+  most_played_character: { id: number; count: number } | null;
+  avg_clear_time: number;
+};
+
+export async function getStatistics(baseUrl: string) {
+  const response = await fetch(`${baseUrl}/statistics`);
+  const { data } = (await response.json()) as { data: StatisticsData };
   return data;
 }

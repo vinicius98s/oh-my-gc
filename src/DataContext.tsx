@@ -12,6 +12,8 @@ import {
   DungeonsResponse,
   getDungeons,
   getDungeonsEntries,
+  getStatistics,
+  StatisticsData,
 } from "./utils/dungeons";
 import Loading from "./components/Loading";
 
@@ -22,6 +24,7 @@ type DataContextType = {
   playingCharacter?: Character | null;
   playingDungeon?: string | null;
   url: string;
+  statistics?: StatisticsData;
 };
 
 const DataContext = createContext<DataContextType>({
@@ -76,6 +79,11 @@ export function DataContextProvider({
     queryFn: () => getDungeonsEntries(url),
   });
 
+  const { data: statistics } = useQuery<StatisticsData>({
+    queryKey: ["statistics"],
+    queryFn: () => getStatistics(url),
+  });
+
   useEffect(() => {
     window.api.getPort().then(setPort);
   }, []);
@@ -102,6 +110,7 @@ export function DataContextProvider({
           case "completed":
             setPlayingDungeon(null);
             queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
+            queryClient.invalidateQueries({ queryKey: ["statistics"] });
             break;
         }
       });
@@ -125,6 +134,7 @@ export function DataContextProvider({
         dungeons,
         dungeonsEntries,
         playingDungeon,
+        statistics,
       }}
     >
       {children}

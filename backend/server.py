@@ -7,7 +7,8 @@ from database import (
     get_dungeons_entries,
     get_tracked_characters,
     update_tracked_characters,
-    update_dungeon_entries
+    update_dungeon_entries,
+    get_statistics
 )
 
 
@@ -105,6 +106,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             args = parse_args()
             with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
                 response = get_dungeons_entries(DB)
+                if response is None:
+                    self.send_error(500, "Server Error")
+                else:
+                    self.wfile.write(response.encode())
+
+        elif self.path == "/statistics":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            args = parse_args()
+            with sqlite3.connect(f"{args.data}/oh-my-gc.sqlite3") as DB:
+                response = get_statistics(DB)
                 if response is None:
                     self.send_error(500, "Server Error")
                 else:

@@ -201,7 +201,7 @@ class GameState:
             if max_val > character_match[0]:
                 character_match = (max_val, character_name)
 
-        threshold = 0.80
+        threshold = 0.75
         confidence = character_match[0]
         if confidence > threshold:
             character = character_match[1]

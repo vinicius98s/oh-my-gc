@@ -1,14 +1,27 @@
+import { useState } from "react";
 import { useDataContext } from "./DataContext";
 
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
+import Statistics from "./pages/Statistics";
+import NavBar, { Page } from "./components/NavBar";
 
 export default function App() {
   const { trackedCharacters } = useDataContext();
+  const [currentPage, setCurrentPage] = useState<Page>("home");
 
+  // Show Onboarding if no tracked characters (one-time flow)
   if (trackedCharacters.length === 0) {
     return <Onboarding />;
   }
 
-  return <Home />;
+  return (
+    <div className="flex flex-col h-full">
+      <NavBar currentPage={currentPage} onNavigate={setCurrentPage} />
+      <div className="flex-1 min-h-0">
+        {currentPage === "home" && <Home />}
+        {currentPage === "statistics" && <Statistics />}
+      </div>
+    </div>
+  );
 }
