@@ -95,25 +95,24 @@ export default function Home() {
         )?.entries_count || 0;
 
       const isDailyComplete =
-        d!.dailyEntryLimit > 0 && dailyEntries >= d!.dailyEntryLimit;
-      const isWeeklyComplete =
-        d!.weeklyEntryLimit > 0 && weeklyEntries >= d!.weeklyEntryLimit;
+        d!.entryPeriod === "daily" &&
+        d!.entryLimit !== null &&
+        dailyEntries >= d!.entryLimit;
 
-      return isDailyComplete || isWeeklyComplete;
+      const isWeeklyComplete =
+        d!.entryPeriod === "weekly" &&
+        d!.entryLimit !== null &&
+        weeklyEntries >= d!.entryLimit;
+
+      return isDailyComplete || isWeeklyComplete || d!.entryLimit === null;
     });
 
   const nextCharacter = useMemo(() => {
     if (!isCurrentScheduleComplete) return undefined;
 
-    // Find next character with incomplete schedule
     const otherTracked = trackedCharacters.filter(
       (c) => c.id !== playingCharacter?.id
     );
-
-    // Try to follow the order in trackedCharacters list which mimics user selection order usually
-    // But we need to rotate to find the one "after" the current if we want a strict cycle,
-    // or just find *any* pending. The requirement says "next character", usually implying order.
-    // Let's just find the first one in the list that isn't done, for simplicity and UX.
 
     for (const char of otherTracked) {
       const charScheduleIds = char.schedule?.[today] || [];
@@ -135,11 +134,16 @@ export default function Home() {
           )?.entries_count || 0;
 
         const isDailyComplete =
-          d!.dailyEntryLimit > 0 && dailyEntries >= d!.dailyEntryLimit;
-        const isWeeklyComplete =
-          d!.weeklyEntryLimit > 0 && weeklyEntries >= d!.weeklyEntryLimit;
+          d!.entryPeriod === "daily" &&
+          d!.entryLimit !== null &&
+          dailyEntries >= d!.entryLimit;
 
-        return isDailyComplete || isWeeklyComplete;
+        const isWeeklyComplete =
+          d!.entryPeriod === "weekly" &&
+          d!.entryLimit !== null &&
+          weeklyEntries >= d!.entryLimit;
+
+        return isDailyComplete || isWeeklyComplete || d!.entryLimit === null;
       });
 
       if (!isCharComplete) {
@@ -207,20 +211,27 @@ export default function Home() {
                   )?.entries_count || 0;
 
                 const isDailyComplete =
-                  dungeon.dailyEntryLimit > 0 &&
-                  dailyEntries >= dungeon.dailyEntryLimit;
+                  dungeon.entryPeriod === "daily" &&
+                  dungeon.entryLimit !== null &&
+                  dailyEntries >= dungeon.entryLimit;
 
                 const isWeeklyComplete =
-                  dungeon.weeklyEntryLimit > 0 &&
-                  weeklyEntries >= dungeon.weeklyEntryLimit;
+                  dungeon.entryPeriod === "weekly" &&
+                  dungeon.entryLimit !== null &&
+                  weeklyEntries >= dungeon.entryLimit;
 
-                const isComplete = isDailyComplete || isWeeklyComplete;
+                const isComplete =
+                  isDailyComplete ||
+                  isWeeklyComplete ||
+                  dungeon.entryLimit === null;
 
                 let progressText = "";
-                if (dungeon.dailyEntryLimit > 0) {
-                  progressText = `${dailyEntries}/${dungeon.dailyEntryLimit}`;
-                } else if (dungeon.weeklyEntryLimit > 0) {
-                  progressText = `${weeklyEntries}/${dungeon.weeklyEntryLimit}`;
+                if (dungeon.entryLimit !== null) {
+                  const current =
+                    dungeon.entryPeriod === "daily"
+                      ? dailyEntries
+                      : weeklyEntries;
+                  progressText = `${current}/${dungeon.entryLimit}`;
                 }
 
                 return (

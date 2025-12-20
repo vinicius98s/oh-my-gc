@@ -13,8 +13,11 @@ CREATE TABLE IF NOT EXISTS dungeons (
             'another-world'
         )
     ),
-    weekly_entry_limit INTEGER,
-    daily_entry_limit INTEGER,
+    entry_limit INTEGER,
+    entry_period TEXT CHECK (
+        entry_period IN ('daily', 'weekly')
+    ),
+    reset_day INTEGER CHECK (reset_day BETWEEN 0 AND 6),
     accent_color TEXT NOT NULL DEFAULT '#6366f1'
 );
 
@@ -33,8 +36,9 @@ INSERT INTO
         name,
         display_name,
         type,
-        weekly_entry_limit,
-        daily_entry_limit,
+        entry_limit,
+        entry_period,
+        reset_day,
         accent_color
     )
 VALUES (
@@ -42,7 +46,8 @@ VALUES (
         'The Crucible',
         'hero-dungeon',
         3,
-        NULL,
+        'weekly',
+        3,
         '#f95e16'
     ),
     (
@@ -50,7 +55,8 @@ VALUES (
         'Sanctum of Destruction',
         'hero-dungeon',
         3,
-        NULL,
+        'weekly',
+        3,
         '#44abef'
     ),
     (
@@ -58,45 +64,51 @@ VALUES (
         'Wizard''s Labyrinth',
         'hero-dungeon',
         5,
-        NULL,
+        'weekly',
+        3,
         '#5573f7'
     ),
     (
         'berkas',
         'Berkas',
         'hero-dungeon',
-        NULL,
         1,
+        'daily',
+        NULL,
         '#f59e0b'
     ),
     (
         'tower-of-disappearance',
         'Tower of Disappearance',
         'hero-dungeon',
-        NULL,
         3,
+        'daily',
+        NULL,
         '#8148ec'
     ),
     (
         'land-of-judgment',
         'Land of Judgment',
         'hero-dungeon',
-        NULL,
         1,
+        'daily',
+        NULL,
         '#2651dc'
     ),
     (
         'infinity-cloister',
         'Infinity Cloister',
         'hero-dungeon',
-        NULL,
         3,
+        'daily',
+        NULL,
         '#5c5ff6'
     ),
     (
         'abyssal-path',
         'Abyssal Path',
         'hero-dungeon',
+        NULL,
         NULL,
         NULL,
         '#e64569'
@@ -107,6 +119,7 @@ VALUES (
         'event-dungeon',
         NULL,
         NULL,
+        NULL,
         '#e73232'
     ),
     (
@@ -114,7 +127,8 @@ VALUES (
         'Void (Invasion)',
         'void-raid-dungeon',
         2,
-        NULL,
+        'weekly',
+        1,
         '#7c3aed'
     ),
     (
@@ -122,7 +136,8 @@ VALUES (
         'Void (Taint)',
         'void-raid-dungeon',
         2,
-        NULL,
+        'weekly',
+        3,
         '#6d28d9'
     ),
     (
@@ -130,37 +145,42 @@ VALUES (
         'Void (Nightmare)',
         'void-raid-dungeon',
         2,
-        NULL,
+        'weekly',
+        5,
         '#581c87'
     ),
     (
         'siege-of-teroka',
         'Siege of Teroka',
         'another-world',
-        NULL,
         1,
+        'daily',
+        NULL,
         '#e90ede'
     ),
     (
         'temple-of-time',
         'Temple of Time',
         'another-world',
-        NULL,
         1,
+        'daily',
+        NULL,
         '#8ac8d3'
     ),
     (
         'kounat',
         'The Great Explosion of Kounat',
         'another-world',
-        NULL,
         1,
+        'daily',
+        NULL,
         '#f6f33b'
     ),
     (
         'chapel-of-eternity',
         'Chapel of Eternity',
         'another-world',
+        NULL,
         NULL,
         NULL,
         '#3c3ea1'

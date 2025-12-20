@@ -96,7 +96,7 @@ export default function DungeonCard({
       </h3>
 
       <div className="w-full flex flex-col gap-2.5 mt-auto">
-        {dungeon.weeklyEntryLimit !== null && (
+        {dungeon.entryLimit !== null && dungeon.entryPeriod === "weekly" && (
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               Weekly
@@ -113,7 +113,7 @@ export default function DungeonCard({
                   <NumberInput
                     defaultValue={weeklyEntries}
                     min={0}
-                    max={dungeon.weeklyEntryLimit}
+                    max={dungeon.entryLimit}
                     onChangeValue={setEditedValue}
                   />
                 </div>
@@ -142,7 +142,7 @@ export default function DungeonCard({
                 <span className="text-sm font-medium text-gray-300">
                   {weeklyEntries}
                   <small className="opacity-50 ml-0.5">
-                    / {dungeon.weeklyEntryLimit}
+                    / {dungeon.entryLimit}
                   </small>
                 </span>
               </div>
@@ -150,7 +150,7 @@ export default function DungeonCard({
           </div>
         )}
 
-        {dungeon.dailyEntryLimit !== null && (
+        {dungeon.entryLimit !== null && dungeon.entryPeriod === "daily" && (
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               Daily
@@ -166,7 +166,7 @@ export default function DungeonCard({
                 <NumberInput
                   defaultValue={dailyEntries}
                   min={0}
-                  max={dungeon.dailyEntryLimit}
+                  max={dungeon.entryLimit}
                   onChangeValue={setEditedValue}
                 />
                 <button
@@ -194,7 +194,7 @@ export default function DungeonCard({
                 <span className="text-sm font-medium text-gray-300">
                   {dailyEntries}
                   <small className="opacity-50 ml-0.5">
-                    / {dungeon.dailyEntryLimit}
+                    / {dungeon.entryLimit}
                   </small>
                 </span>
               </div>
@@ -202,7 +202,7 @@ export default function DungeonCard({
           </div>
         )}
 
-        {!dungeon.weeklyEntryLimit && !dungeon.dailyEntryLimit && (
+        {dungeon.entryLimit === null && (
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
               Today

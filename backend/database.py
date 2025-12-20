@@ -12,9 +12,10 @@ def get_dungeons(DB):
                 "name": row[1],
                 "display_name": row[2],
                 "type": row[3],
-                "weekly_entry_limit": row[4],
-                "daily_entry_limit": row[5],
-                "accent_color": row[6],
+                "entry_limit": row[4],
+                "entry_period": row[5],
+                "reset_day": row[6],
+                "accent_color": row[7],
             })
         return json.dumps({"data": response})
     except Exception as e:
@@ -42,13 +43,17 @@ def get_dungeons_entries(DB):
             "finished_at": row[4]
         } for row in rows]
         
-        # Get weekly entry counts per character per dungeon
+        # Get weekly/daily entry counts per character per dungeon
         count_query = """
-            SELECT de.dungeon_id, c.id AS character_id, COUNT(de.id) as entries_count
+            SELECT de.dungeon_id, c.id AS character_id, COUNT(de.id) as entries_count, d.entry_period, d.reset_day
             FROM characters c
-            LEFT JOIN dungeons_entries de ON c.id = de.character_id
-            AND de.started_at >= date('now', 'weekday 3', '-7 days')
-            AND de.started_at < date('now', 'weekday 3', '+7 days')
+            CROSS JOIN dungeons d
+            LEFT JOIN dungeons_entries de ON c.id = de.character_id AND d.id = de.dungeon_id
+            AND (
+                (d.entry_period = 'daily' AND de.started_at >= date('now') AND de.started_at < date('now', '+1 day'))
+                OR
+                (d.entry_period = 'weekly' AND de.started_at >= date('now', 'weekday ' || d.reset_day, '-7 days') AND de.started_at < date('now', 'weekday ' || d.reset_day, '+7 days'))
+            )
             AND de.finished_at IS NOT NULL
             WHERE c.tracking = TRUE
             GROUP BY de.dungeon_id, c.id
@@ -164,24 +169,33 @@ def update_tracked_characters(DB, payload):
     return json.dumps({"data": response})
 
 
-def update_dungeon_entries(DB, dungeon_id, character_id, value, update_mode="weekly"):
+def update_dungeon_entries(DB, dungeon_id, character_id, value):
     try:
         cursor = DB.cursor()
+        
+        # Get dungeon's limit period and reset day
+        dungeon_query = "SELECT entry_period, reset_day FROM dungeons WHERE id = ?"
+        dungeon = cursor.execute(dungeon_query, (dungeon_id,)).fetchone()
+        if not dungeon:
+            return None
+        
+        entry_period, reset_day = dungeon
+        
         delete_query = "DELETE FROM dungeons_entries WHERE finished_at IS NULL AND character_id = ? AND dungeon_id = ?"
         cursor.execute(delete_query, (character_id, dungeon_id))
  
         date_filter = ""
-        if update_mode == "daily":
+        if entry_period == "daily":
             # Filter for today only
             date_filter = """
                 AND started_at >= date('now')
                 AND started_at < date('now', '+1 day')
             """
-        else:
-            # Default weekly behavior (last 7 days)
-            date_filter = """
-                AND started_at >= date('now', 'weekday 3', '-7 days')
-                AND started_at < date('now', 'weekday 3', '+7 days')
+        elif entry_period == "weekly":
+            # Per-dungeon weekly behavior
+            date_filter = f"""
+                AND started_at >= date('now', 'weekday {reset_day}', '-7 days')
+                AND started_at < date('now', 'weekday {reset_day}', '+7 days')
             """
 
         query = f"""

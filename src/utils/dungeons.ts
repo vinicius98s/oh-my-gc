@@ -22,8 +22,9 @@ export type Dungeon = {
   type: DungeonTypes;
   displayName: string;
   image: string;
-  weeklyEntryLimit: number;
-  dailyEntryLimit: number;
+  entryLimit: number | null;
+  entryPeriod: "daily" | "weekly" | null;
+  resetDay: number | null;
   accentColor: string;
   charactersAvgCompletionTime: { character_id: number; avg_time: number | null }[];
   charactersWeeklyEntries: { entries_count: number; character_id: number }[];
@@ -86,8 +87,9 @@ export function formatDungeons(
       name,
       type,
       display_name,
-      weekly_entry_limit,
-      daily_entry_limit,
+      entry_limit,
+      entry_period,
+      reset_day,
       accent_color,
     }) => {
       const dailyEntriesMap = new Map<number, number>();
@@ -134,8 +136,9 @@ export function formatDungeons(
         type,
         displayName: display_name,
         image: getDungeonImage(id),
-        weeklyEntryLimit: weekly_entry_limit,
-        dailyEntryLimit: daily_entry_limit,
+        entryLimit: entry_limit,
+        entryPeriod: entry_period as "daily" | "weekly" | null,
+        resetDay: reset_day,
         accentColor: accent_color,
         charactersAvgCompletionTime: charactersAvgCompletionTime,
         charactersWeeklyEntries: charactersWeeklyEntries,
@@ -164,8 +167,9 @@ export type DungeonsResponse = {
   name: string;
   display_name: string;
   type: DungeonTypes;
-  weekly_entry_limit: number;
-  daily_entry_limit: number;
+  entry_limit: number | null;
+  entry_period: string | null;
+  reset_day: number | null;
   accent_color: string;
 }[];
 

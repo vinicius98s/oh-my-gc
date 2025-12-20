@@ -52,10 +52,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     dungeon_id = body["dungeonId"]
                     character_id = body["characterId"]
                     value = body["value"]
-                    update_mode = body.get("update_mode", "weekly")
 
                     response = update_dungeon_entries(
-                        DB, dungeon_id, character_id, value, update_mode)
+                        DB, dungeon_id, character_id, value)
                     if response is None:
                         self.send_error(500, "Server Error")
                     else:

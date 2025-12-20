@@ -1,5 +1,6 @@
 import queue
 import threading
+import json
 
 
 class SSEBroadcaster:
@@ -18,7 +19,7 @@ class SSEBroadcaster:
             self.listeners.remove(q)
 
     def broadcast(self, event, data):
-        message = f"event: {event}\ndata: {data}\n\n"
+        message = f"event: {event}\ndata: {json.dumps(data)}\n\n"
         with self.lock:
             for q in self.listeners:
                 try:
