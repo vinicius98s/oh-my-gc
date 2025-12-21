@@ -23,76 +23,54 @@ def get_dungeons(DB):
         return None
 
 
-def get_dungeons_entries(DB):
+def get_dungeons_entries(DB, character_id):
     try:
         cursor = DB.cursor()
-        
-        # Get raw entries for the current week
-        entries_query = """
-            SELECT * FROM dungeons_entries
-            WHERE started_at >= date('now', 'weekday 3', '-7 days')
-            AND started_at < date('now', 'weekday 3', '+7 days')
-            AND finished_at IS NOT NULL
-        """
-        rows = cursor.execute(entries_query).fetchall()
-        entries = [{
-            "id": row[0],
-            "dungeon_id": row[1],
-            "character_id": row[2],
-            "started_at": row[3],
-            "finished_at": row[4]
-        } for row in rows]
+
+        # Get all dungeons first to ensure they are all included in the response
+        dungeons = cursor.execute("SELECT id, entry_period, reset_day FROM dungeons").fetchall()
         
         # Get weekly/daily entry counts per character per dungeon
-        count_query = """
-            SELECT de.dungeon_id, c.id AS character_id, COUNT(de.id) as entries_count, d.entry_period, d.reset_day
-            FROM characters c
-            CROSS JOIN dungeons d
-            LEFT JOIN dungeons_entries de ON c.id = de.character_id AND d.id = de.dungeon_id
-            AND (
-                (d.entry_period = 'daily' AND de.started_at >= date('now') AND de.started_at < date('now', '+1 day'))
-                OR
-                (d.entry_period = 'weekly' AND de.started_at >= date('now', 'weekday ' || d.reset_day, '-7 days') AND de.started_at < date('now', 'weekday ' || d.reset_day, '+7 days'))
-            )
-            AND de.finished_at IS NOT NULL
-            WHERE c.tracking = TRUE
-            GROUP BY de.dungeon_id, c.id
-        """
-        count_rows = cursor.execute(count_query).fetchall()
-        characters_entries = [{
-            "dungeon_id": row[0],
-            "character_id": row[1],
-            "entries_count": row[2]
-        } for row in count_rows if row[0] is not None]
+        # We'll calculate this in Python to handle the NULL entry_period logic more clearly
+        # and ensure all dungeons are represented.
         
-        # Get average completion time per character per dungeon
-        avg_time_query = """
-            SELECT de.dungeon_id, c.id AS character_id, AVG(
-                (julianday(de.finished_at) - julianday(de.started_at)) * 86400
-            ) as avg_time
-            FROM characters c
-            LEFT JOIN dungeons_entries de ON c.id = de.character_id
-            AND de.finished_at IS NOT NULL
-            AND de.finished_at != de.started_at
-            WHERE c.tracking = TRUE
-            GROUP BY de.dungeon_id, c.id
-        """
-        avg_time_rows = cursor.execute(avg_time_query).fetchall()
-        characters_avg_completion_time = [{
-            "dungeon_id": row[0],
-            "character_id": row[1],
-            "avg_time": row[2]
-        } for row in avg_time_rows if row[0] is not None]
-        
+        entries_data = []
+
+        for d_id, entry_period, reset_day in dungeons:
+            date_filter = ""
+            if entry_period == "daily":
+                date_filter = "AND started_at >= date('now') AND started_at < date('now', '+1 day')"
+            elif entry_period == "weekly":
+                date_filter = f"AND started_at >= date('now', 'weekday {reset_day}', '-7 days') AND started_at < date('now', 'weekday {reset_day}', '+7 days')"
+            
+            count_query = f"""
+                SELECT COUNT(id) FROM dungeons_entries 
+                WHERE dungeon_id = ? AND character_id = ? 
+                AND finished_at IS NOT NULL
+                {date_filter}
+            """
+            count = cursor.execute(count_query, (d_id, character_id)).fetchone()[0]
+
+            avg_time_query = """
+                SELECT AVG((julianday(finished_at) - julianday(started_at)) * 86400)
+                FROM dungeons_entries
+                WHERE dungeon_id = ? AND character_id = ?
+                AND finished_at IS NOT NULL
+                AND finished_at != started_at
+            """
+            avg_time = cursor.execute(avg_time_query, (d_id, character_id)).fetchone()[0]
+
+            entries_data.append({
+                "dungeon_id": d_id,
+                "entries_count": count,
+                "avg_time": avg_time
+            })
+
         return json.dumps({
-            "data": {
-                "entries": entries,
-                "characters_entries": characters_entries,
-                "characters_avg_completion_time": characters_avg_completion_time
-            }
+            "data": entries_data
         })
     except Exception as e:
-        print(e)
+        print(f"Error in get_dungeons_entries: {e}")
         return None
 
 
@@ -306,4 +284,74 @@ def get_statistics(DB):
         })
     except Exception as e:
         print(f"Error getting statistics: {e}")
+        return None
+
+def get_recommendation(DB, current_character_id, current_dungeon_id):
+    try:
+        cursor = DB.cursor()
+        
+        # Ensure current_character_id is an int if it's not None
+        if current_character_id is not None:
+            current_character_id = int(current_character_id)
+        
+        # Get today's day name (e.g., 'Monday')
+        # %A is the full weekday name in Python strftime
+        import datetime
+        today = datetime.datetime.now().strftime("%A")
+        
+        # Get all tracked characters
+        characters = cursor.execute("SELECT id, name FROM characters WHERE tracking = 1").fetchall()
+        
+        # Get all dungeons to have their limits/periods
+        dungeons_rows = cursor.execute("SELECT id, entry_limit, entry_period, reset_day FROM dungeons").fetchall()
+        dungeons_map = {row[0]: {"limit": row[1], "period": row[2], "reset_day": row[3]} for row in dungeons_rows}
+
+        recommendation = None
+        fallback_recommendation = None
+
+        for char_id, char_name in characters:
+            if char_id == current_character_id:
+                continue
+                
+            # Get character's schedule for today
+            schedule = cursor.execute(
+                "SELECT dungeon_id FROM character_schedules WHERE character_id = ? AND day = ?",
+                (char_id, today)
+            ).fetchall()
+            
+            if not schedule:
+                continue
+                
+            dungeon_ids = [row[0] for row in schedule]
+            
+            # Check if character has completed their scheduled dungeons
+            for d_id in dungeon_ids:
+                d_info = dungeons_map.get(d_id)
+                if not d_info or d_info["limit"] is None:
+                    continue # If no limit, we don't treat it as "incomplete" for recommendation
+                
+                # Check entries for this dungeon/character
+                date_filter = ""
+                if d_info["period"] == "daily":
+                    date_filter = "AND started_at >= date('now') AND started_at < date('now', '+1 day')"
+                elif d_info["period"] == "weekly":
+                    date_filter = f"AND started_at >= date('now', 'weekday {d_info['reset_day']}', '-7 days') AND started_at < date('now', 'weekday {d_info['reset_day']}', '+7 days')"
+                
+                count = cursor.execute(f"SELECT COUNT(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND finished_at IS NOT NULL {date_filter}", (d_id, char_id)).fetchone()[0]
+                
+                if count < d_info["limit"]:
+                    # Found an incomplete dungeon for this character
+                    if d_id == current_dungeon_id:
+                        # Highest priority: same dungeon
+                        return json.dumps({"data": {"id": char_id, "name": char_name}})
+                    
+                    if fallback_recommendation is None:
+                        fallback_recommendation = {"id": char_id, "name": char_name}
+
+        if fallback_recommendation:
+            return json.dumps({"data": fallback_recommendation})
+            
+        return json.dumps({"data": None})
+    except Exception as e:
+        print(f"Error in get_recommendation: {e}")
         return None

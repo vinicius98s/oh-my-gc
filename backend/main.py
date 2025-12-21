@@ -33,7 +33,13 @@ def game_loop(args, broadcaster):
                 print("[game_loop]: Game window not found")
                 continue
 
+            if window.isMinimized:
+                continue
+
             img = game.take_screenshot(window, f"{args.user_data}/screenshot.png")
+            if img is None:
+                continue
+
             game_state = GameState(last_character_id, img, DB, broadcaster)
 
             game_state.match_lobby_character()

@@ -6,14 +6,13 @@ import { useDataContext } from "../DataContext";
 import { Dungeon } from "../utils/dungeons";
 
 type Props = {
-  playingCharacterId: number;
   dungeons: Dungeon[];
 };
 
-export default function DungeonsList({ playingCharacterId, dungeons }: Props) {
+export default function DungeonsList({ dungeons }: Props) {
   const queryClient = useQueryClient();
 
-  const { url } = useDataContext();
+  const { url, playingCharacter } = useDataContext();
 
   const mutation = useMutation({
     mutationFn: (body: {
@@ -34,8 +33,9 @@ export default function DungeonsList({ playingCharacterId, dungeons }: Props) {
     value: number,
     mode: "weekly" | "daily"
   ) => {
+    if (!playingCharacter) return;
     mutation.mutate(
-      { dungeonId, value, characterId: playingCharacterId, update_mode: mode },
+      { dungeonId, value, characterId: playingCharacter.id, update_mode: mode },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
@@ -50,7 +50,6 @@ export default function DungeonsList({ playingCharacterId, dungeons }: Props) {
         <DungeonCard
           key={dungeon.id}
           dungeon={dungeon}
-          playingCharacterId={playingCharacterId}
           onEdit={onEditEntries}
         />
       ))}

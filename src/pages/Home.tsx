@@ -9,7 +9,11 @@ import { getCharacterById } from "../utils/characters";
 import DungeonsList from "../components/DungeonsList";
 import GameStatus from "../components/GameStatus";
 import TodayScheduleCard from "../components/TodayScheduleCard";
-import { formatDungeons } from "../utils/dungeons";
+import {
+  formatDungeons,
+  isDungeonComplete,
+  getDungeonProgressText,
+} from "../utils/dungeons";
 
 export default function Home() {
   const {
@@ -18,6 +22,7 @@ export default function Home() {
     dungeons,
     dungeonsEntries,
     trackedCharacters,
+    recommendedCharacter,
     url,
   } = useDataContext();
 
@@ -50,131 +55,53 @@ export default function Home() {
     });
   };
 
-  const formattedDungeons = formatDungeons(dungeons, dungeonsEntries);
-
-  const heroDungeons = formattedDungeons.filter(
-    (d) => d.type === "hero-dungeon"
-  );
-  const voidRaidDungeons = formattedDungeons.filter(
-    (d) => d.type === "void-raid-dungeon"
-  );
-  const eventDungeons = formattedDungeons.filter(
-    (d) => d.type === "event-dungeon"
-  );
-  const anotherWorldDungeons = formattedDungeons.filter(
-    (d) => d.type === "another-world"
+  const formattedDungeons = useMemo(
+    () => formatDungeons(dungeons, dungeonsEntries),
+    [dungeons, dungeonsEntries]
   );
 
-  const currentlyPlayingDungeon = [
-    ...heroDungeons,
-    ...voidRaidDungeons,
-    ...eventDungeons,
-    ...anotherWorldDungeons,
-  ].find((dungeon) => dungeon.name === playingDungeon);
+  const sortedDungeons = useMemo(() => {
+    return {
+      hero: formattedDungeons.filter((d) => d.type === "hero-dungeon"),
+      void: formattedDungeons.filter((d) => d.type === "void-raid-dungeon"),
+      event: formattedDungeons.filter((d) => d.type === "event-dungeon"),
+      anotherWorld: formattedDungeons.filter((d) => d.type === "another-world"),
+    };
+  }, [formattedDungeons]);
+
+  const currentlyPlayingDungeon = useMemo(
+    () => formattedDungeons.find((d) => d.name === playingDungeon),
+    [formattedDungeons, playingDungeon]
+  );
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
-  const currentTrackedChar = trackedCharacters.find(
-    (c) => c.id === playingCharacter?.id
-  );
-  const todayScheduleIds = currentTrackedChar?.schedule?.[today] || [];
-  const todayDungeons = todayScheduleIds
-    .map((id) => formattedDungeons.find((d) => d.id === id))
-    .filter((d) => !!d);
 
-  const isCurrentScheduleComplete =
-    !currentTrackedChar ||
-    todayDungeons.every((d) => {
-      const dailyEntries =
-        d!.charactersDailyEntries.find(
-          (entry) => entry.character_id === playingCharacter.id
-        )?.entries_count || 0;
+  const todayDungeons = useMemo(() => {
+    const currentTrackedChar = trackedCharacters.find(
+      (c) => c.id === playingCharacter?.id
+    );
+    const todayScheduleIds = currentTrackedChar?.schedule?.[today] || [];
+    return todayScheduleIds
+      .map((id) => formattedDungeons.find((d) => d.id === id))
+      .filter((d) => !!d) as typeof formattedDungeons;
+  }, [trackedCharacters, playingCharacter?.id, today, formattedDungeons]);
 
-      const weeklyEntries =
-        d!.charactersWeeklyEntries.find(
-          (entry) => entry.character_id === playingCharacter.id
-        )?.entries_count || 0;
-
-      const isDailyComplete =
-        d!.entryPeriod === "daily" &&
-        d!.entryLimit !== null &&
-        dailyEntries >= d!.entryLimit;
-
-      const isWeeklyComplete =
-        d!.entryPeriod === "weekly" &&
-        d!.entryLimit !== null &&
-        weeklyEntries >= d!.entryLimit;
-
-      return isDailyComplete || isWeeklyComplete || d!.entryLimit === null;
-    });
+  const isCurrentScheduleComplete = useMemo(() => {
+    if (!playingCharacter || todayDungeons.length === 0) return true;
+    return todayDungeons.every(isDungeonComplete);
+  }, [playingCharacter, todayDungeons]);
 
   const nextCharacter = useMemo(() => {
-    if (!isCurrentScheduleComplete) return undefined;
+    if (!recommendedCharacter) return undefined;
+    return getCharacterById(recommendedCharacter.id);
+  }, [recommendedCharacter]);
 
-    const otherTracked = trackedCharacters.filter(
-      (c) => c.id !== playingCharacter?.id
-    );
-
-    for (const char of otherTracked) {
-      const charScheduleIds = char.schedule?.[today] || [];
-      if (charScheduleIds.length === 0) continue;
-
-      const charDungeons = charScheduleIds
-        .map((id) => formattedDungeons.find((d) => d.id === id))
-        .filter((d) => !!d);
-
-      const isCharComplete = charDungeons.every((d) => {
-        const dailyEntries =
-          d!.charactersDailyEntries.find(
-            (entry) => entry.character_id === char.id
-          )?.entries_count || 0;
-
-        const weeklyEntries =
-          d!.charactersWeeklyEntries.find(
-            (entry) => entry.character_id === char.id
-          )?.entries_count || 0;
-
-        const isDailyComplete =
-          d!.entryPeriod === "daily" &&
-          d!.entryLimit !== null &&
-          dailyEntries >= d!.entryLimit;
-
-        const isWeeklyComplete =
-          d!.entryPeriod === "weekly" &&
-          d!.entryLimit !== null &&
-          weeklyEntries >= d!.entryLimit;
-
-        return isDailyComplete || isWeeklyComplete || d!.entryLimit === null;
-      });
-
-      if (!isCharComplete) {
-        return getCharacterById(char.id);
-      }
-    }
-    return undefined;
-  }, [
-    isCurrentScheduleComplete,
-    trackedCharacters,
-    playingCharacter?.id,
-    today,
-    formattedDungeons,
-  ]);
-
-  const isAllDone = isCurrentScheduleComplete && !nextCharacter;
-
-  if (!playingCharacter) {
-    return (
-      <div className="h-screen flex items-center justify-center text-center text-white">
-        Could not find any playing character.
-        <br />
-        Make sure to have the game open and running.
-      </div>
-    );
-  }
+  const isAllDone = !nextCharacter && isCurrentScheduleComplete;
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-6">
-        <div className="mb-10">
+        <div className="mb-8">
           <GameStatus
             character={playingCharacter}
             dungeon={currentlyPlayingDungeon}
@@ -183,117 +110,81 @@ export default function Home() {
           />
         </div>
 
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-md font-bold text-white">
-              Today's Schedule{" "}
-              <span className="text-light-blue text-sm">({today})</span>
-            </h2>
-            <Button
-              onClick={() => setIsScheduleBuilderOpen(true)}
-              className="text-xs px-3 py-1 font-medium text-white"
-            >
-              Edit Schedule
-            </Button>
-          </div>
+        {playingCharacter && (
+          <>
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-md font-bold text-white">
+                  Today's Schedule{" "}
+                  <span className="text-light-blue text-sm">({today})</span>
+                </h2>
+                <Button
+                  onClick={() => setIsScheduleBuilderOpen(true)}
+                  className="text-xs px-3 py-1 font-medium text-white"
+                >
+                  Edit Schedule
+                </Button>
+              </div>
 
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
-            {todayDungeons.length > 0 ? (
-              todayDungeons.map((dungeon) => {
-                const dailyEntries =
-                  dungeon.charactersDailyEntries.find(
-                    (entry) => entry.character_id === playingCharacter.id
-                  )?.entries_count || 0;
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                {todayDungeons.length > 0 ? (
+                  todayDungeons.map((dungeon) => (
+                    <TodayScheduleCard
+                      key={dungeon.id}
+                      dungeon={dungeon}
+                      isComplete={isDungeonComplete(dungeon)}
+                      progressText={getDungeonProgressText(dungeon)}
+                    />
+                  ))
+                ) : (
+                  <div className="text-gray-400 text-sm italic py-4">
+                    No dungeons scheduled for today.
+                  </div>
+                )}
+              </div>
+            </div>
 
-                const weeklyEntries =
-                  dungeon.charactersWeeklyEntries.find(
-                    (entry) => entry.character_id === playingCharacter.id
-                  )?.entries_count || 0;
-
-                const isDailyComplete =
-                  dungeon.entryPeriod === "daily" &&
-                  dungeon.entryLimit !== null &&
-                  dailyEntries >= dungeon.entryLimit;
-
-                const isWeeklyComplete =
-                  dungeon.entryPeriod === "weekly" &&
-                  dungeon.entryLimit !== null &&
-                  weeklyEntries >= dungeon.entryLimit;
-
-                const isComplete =
-                  isDailyComplete ||
-                  isWeeklyComplete ||
-                  dungeon.entryLimit === null;
-
-                let progressText = "";
-                if (dungeon.entryLimit !== null) {
-                  const current =
-                    dungeon.entryPeriod === "daily"
-                      ? dailyEntries
-                      : weeklyEntries;
-                  progressText = `${current}/${dungeon.entryLimit}`;
-                }
-
-                return (
-                  <TodayScheduleCard
-                    key={dungeon.id}
-                    dungeon={dungeon}
-                    playingCharacterId={playingCharacter.id}
-                    isComplete={isComplete}
-                    progressText={progressText}
-                  />
-                );
-              })
-            ) : (
-              <div className="text-gray-400 text-sm italic py-4">
-                No dungeons scheduled for today.
+            {sortedDungeons.hero.length > 0 && (
+              <div>
+                <p className="mb-4 text-light-blue font-bold tracking-wide uppercase text-xs">
+                  Hero Dungeons
+                </p>
+                <DungeonsList dungeons={sortedDungeons.hero} />
               </div>
             )}
-          </div>
-        </div>
 
-        {heroDungeons.length > 0 && (
-          <div>
-            <p className="mb-4 text-light-blue">Hero Dungeons</p>
-            <DungeonsList
-              playingCharacterId={playingCharacter.id}
-              dungeons={heroDungeons}
-            />
-          </div>
-        )}
+            {sortedDungeons.void.length > 0 && (
+              <div className="mt-8">
+                <p className="mb-4 text-light-blue font-bold tracking-wide uppercase text-xs">
+                  Void Raid Dungeons
+                </p>
+                <DungeonsList dungeons={sortedDungeons.void} />
+              </div>
+            )}
 
-        {voidRaidDungeons.length > 0 && (
-          <div className="mt-8">
-            <p className="mb-4 text-light-blue">Void Raid Dungeons</p>
-            <DungeonsList
-              playingCharacterId={playingCharacter.id}
-              dungeons={voidRaidDungeons}
-            />
-          </div>
-        )}
+            {sortedDungeons.anotherWorld.length > 0 && (
+              <div className="mt-8">
+                <p className="mb-4 text-light-blue font-bold tracking-wide uppercase text-xs">
+                  Another World Dungeons
+                </p>
+                <DungeonsList dungeons={sortedDungeons.anotherWorld} />
+              </div>
+            )}
 
-        {anotherWorldDungeons.length > 0 && (
-          <div className="mt-8">
-            <p className="mb-4 text-light-blue">Another World Dungeons</p>
-            <DungeonsList
-              playingCharacterId={playingCharacter.id}
-              dungeons={anotherWorldDungeons}
-            />
-          </div>
-        )}
-
-        {eventDungeons.length > 0 && (
-          <div className="mt-8">
-            <p className="mb-4 text-light-blue">Event Dungeons</p>
-            <DungeonsList
-              playingCharacterId={playingCharacter.id}
-              dungeons={eventDungeons}
-            />
-          </div>
+            {sortedDungeons.event.length > 0 && (
+              <div className="mt-8">
+                <p className="mb-4 text-light-blue font-bold tracking-wide uppercase text-xs">
+                  Event Dungeons
+                </p>
+                <DungeonsList dungeons={sortedDungeons.event} />
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {isScheduleBuilderOpen &&
+        playingCharacter &&
         createPortal(
           <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-10 animate-in fade-in duration-200">
             <div className="bg-gray-900 border border-white/10 rounded-xl w-full max-w-6xl h-[85vh] flex flex-col shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-200">
@@ -311,7 +202,10 @@ export default function Home() {
                   <ScheduleBuilder
                     selectedCharacterIds={[playingCharacter.id]}
                     initialSchedules={{
-                      [playingCharacter.id]: currentTrackedChar?.schedule || {},
+                      [playingCharacter.id]:
+                        trackedCharacters.find(
+                          (c) => c.id === playingCharacter.id
+                        )?.schedule || {},
                     }}
                     onConfirm={handleSaveSchedule}
                   />

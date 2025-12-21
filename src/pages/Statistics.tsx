@@ -176,7 +176,7 @@ export default function Statistics() {
               />
             )}
 
-            <div className="relative z-10 flex items-center gap-6">
+            <div className="h-full relative z-10 flex items-center gap-6">
               <div className="relative shrink-0">
                 {mostPlayedCharacter ? (
                   <>
@@ -196,7 +196,7 @@ export default function Statistics() {
                     />
                   </>
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-white/5 border border-white/10" />
+                  <div className="h-20 w-32 rounded-lg bg-white/5 border border-white/10" />
                 )}
               </div>
 

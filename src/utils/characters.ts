@@ -202,7 +202,7 @@ export const characters: Character[] = [
     image: iris,
     displayName: "Iris",
     colorTheme: { from: "#10b981", to: "#0ea5e9" }, // Green-500 to Blue-500
-  }
+  },
 ];
 
 export function getCharacterByName(name: string) {
@@ -226,5 +226,24 @@ export async function getTrackedCharacters(baseUrl: string) {
   const { data } = (await response.json()) as {
     data: TrackedCharactersResponse;
   };
+  return data;
+}
+
+export type RecommendationResponse = {
+  id: number;
+  name: string;
+} | null;
+
+export async function getNextCharacterRecommendation(
+  baseUrl: string,
+  characterId: number | null,
+  dungeonIdOrName: string | number | null
+): Promise<RecommendationResponse> {
+  const params = new URLSearchParams();
+  if (characterId) params.append("character_id", characterId.toString());
+  if (dungeonIdOrName) params.append("dungeon_id", dungeonIdOrName.toString());
+
+  const response = await fetch(`${baseUrl}/recommend?${params.toString()}`);
+  const { data } = (await response.json()) as { data: RecommendationResponse };
   return data;
 }

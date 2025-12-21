@@ -2,7 +2,7 @@ import { Character } from "../utils/characters";
 import { Dungeon } from "../utils/dungeons";
 
 type GameStatusProps = {
-  character: Character;
+  character?: Character;
   dungeon?: Dungeon;
   nextCharacter?: Character;
   isAllDone?: boolean;
@@ -14,6 +14,44 @@ export default function GameStatus({
   nextCharacter,
   isAllDone,
 }: GameStatusProps) {
+  if (!character) {
+    return (
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl transition-all duration-500 hover:shadow-purple-500/5 group">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/80 z-10" />
+        </div>
+
+        <div className="relative z-10 p-6">
+          <div className="flex flex-row items-center gap-8">
+            <div className="relative shrink-0">
+              <div className="absolute -inset-1 rounded-full opacity-75 blur transition duration-500 bg-gradient-to-r from-gray-700 to-gray-800" />
+              <div className="relative h-24 w-24 rounded-full border-2 border-gray-700 bg-gray-800 flex items-center justify-center shadow-xl">
+                <span className="mb-2 text-4xl">🎮</span>
+              </div>
+              <div className="absolute bottom-0 right-0 rounded-full bg-red-500 p-2 ring-4 ring-gray-900">
+                <div className="h-2 w-2 rounded-full bg-white opacity-50" />
+              </div>
+            </div>
+
+            <div className="flex-1 text-left space-y-2">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider">
+                Game Status
+              </p>
+              <h2 className="text-2xl font-black tracking-tight text-white drop-shadow-lg">
+                Waiting for Character...
+              </h2>
+              <p className="text-sm text-gray-400">
+                Make sure to have the game open and running
+                <br />
+                We will detect when you select a character
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gray-900 shadow-2xl transition-all duration-500 hover:shadow-purple-500/5 group">
       <div className="absolute inset-0">

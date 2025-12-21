@@ -1,6 +1,7 @@
 import http.server
 import json
 import sqlite3
+import urllib.parse
 from utils import parse_args
 from database import (
     get_dungeons,
@@ -8,7 +9,8 @@ from database import (
     get_tracked_characters,
     update_tracked_characters,
     update_dungeon_entries,
-    get_statistics
+    get_statistics,
+    get_recommendation
 )
 
 
@@ -98,14 +100,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 else:
                     self.wfile.write(response.encode())
 
-        elif self.path == "/dungeons_entries":
+        elif self.path.startswith("/dungeons_entries"):
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
 
+            query = urllib.parse.urlparse(self.path).query
+            params = urllib.parse.parse_qs(query)
+            character_id = params.get("character_id", [None])[0]
+
             args = parse_args()
             with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
-                response = get_dungeons_entries(DB)
+                response = get_dungeons_entries(DB, character_id)
                 if response is None:
                     self.send_error(500, "Server Error")
                 else:
@@ -132,6 +138,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             args = parse_args()
             with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 response = get_tracked_characters(DB)
+                if response is None:
+                    self.send_error(500, "Server Error")
+                else:
+                    self.wfile.write(response.encode())
+
+        elif self.path.startswith("/recommend"):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            query = urllib.parse.urlparse(self.path).query
+            params = urllib.parse.parse_qs(query)
+            character_id = params.get("character_id", [None])[0]
+            dungeon_id = params.get("dungeon_id", [None])[0]
+
+            args = parse_args()
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
+                actual_dungeon_id = None
+                if dungeon_id:
+                    try:
+                        actual_dungeon_id = int(dungeon_id)
+                    except ValueError:
+                        cursor = DB.cursor()
+                        row = cursor.execute("SELECT id FROM dungeons WHERE name = ?", (dungeon_id,)).fetchone()
+                        if row:
+                            actual_dungeon_id = row[0]
+
+                response = get_recommendation(DB, character_id, actual_dungeon_id)
                 if response is None:
                     self.send_error(500, "Server Error")
                 else:

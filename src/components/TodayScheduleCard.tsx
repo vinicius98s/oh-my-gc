@@ -3,21 +3,15 @@ import { cn } from "../utils/lib";
 
 type TodayScheduleCardProps = {
   dungeon: Dungeon;
-  playingCharacterId: number;
   isComplete: boolean;
   progressText: string;
 };
 
 export default function TodayScheduleCard({
   dungeon,
-  playingCharacterId,
   isComplete,
   progressText,
 }: TodayScheduleCardProps) {
-  const avgCompletionTime = dungeon.charactersAvgCompletionTime.find(
-    (entry) => entry.character_id === playingCharacterId
-  )?.avg_time;
-
   return (
     <div
       className={cn(
@@ -86,7 +80,7 @@ export default function TodayScheduleCard({
               isComplete ? "text-gray-500" : "text-gray-300"
             )}
           >
-            {formatDungeonAverageTime(avgCompletionTime)}
+            {formatDungeonAverageTime(dungeon.avgTime)}
           </span>
         </div>
       </div>

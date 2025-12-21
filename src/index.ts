@@ -35,13 +35,6 @@ const createWindow = () => {
   const port = getRandomOpenPort();
 
   if (app.isPackaged) {
-    const tesseractPath = path.join(
-      process.resourcesPath,
-      "third-party",
-      "tesseract-win64",
-      "tesseract.exe",
-    );
-
     const dataPath = app.getPath("userData");
     const logPath = path.join(dataPath, "backend.log");
     const logStream = fs.createWriteStream(logPath, { flags: "a" });
@@ -50,24 +43,18 @@ const createWindow = () => {
       fs.mkdirSync(dataPath, { recursive: true });
     }
 
-    if (!fs.existsSync(tesseractPath)) {
-      fs.appendFileSync(
-        logPath,
-        `[ERROR]: Tesseract not found at ${tesseractPath}\n`,
-      );
-    } else {
-      fs.appendFileSync(
-        logPath,
-        `[INFO]: Tesseract found at ${tesseractPath}\n`,
-      );
-    }
-
     const dbPath = path.join(dataPath, "oh-my-gc.sqlite3");
 
     if (!fs.existsSync(dbPath)) {
       fs.writeFileSync(dbPath, "");
     }
 
+    const tesseractPath = path.join(
+      process.resourcesPath,
+      "third-party",
+      "tesseract-win64",
+      "tesseract.exe"
+    );
     const migrationsPath = path.join(process.resourcesPath, "migrations");
     const templatesPath = path.join(process.resourcesPath, "templates");
     const backendPath = path.join(process.resourcesPath, "main.exe");
@@ -108,7 +95,7 @@ const createWindow = () => {
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
-    icon: path.join(__dirname, "../../src/assets/icon.png"),
+    icon: path.join(__dirname, "../../src/assets/icon.ico"),
   });
 
   mainWindow.setResizable(false);
@@ -119,14 +106,6 @@ const createWindow = () => {
 
   ipcMain.on("minimize-window", () => {
     mainWindow.minimize();
-  });
-
-  ipcMain.on("maximize-window", () => {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
-    } else {
-      mainWindow.maximize();
-    }
   });
 
   ipcMain.on("close-window", () => {
@@ -141,7 +120,7 @@ const createWindow = () => {
           "Content-Security-Policy": ["connect-src 'self' http://localhost:*;"],
         },
       });
-    },
+    }
   );
 };
 
@@ -149,9 +128,8 @@ app.on("ready", createWindow);
 
 const killBackend = () => {
   if (backendProcess && backendProcess.pid) {
-    if (process.platform === 'win32') {
-      // On Windows, use taskkill to forcefully terminate the process tree
-      spawn('taskkill', ['/pid', backendProcess.pid.toString(), '/f', '/t']);
+    if (process.platform === "win32") {
+      spawn("taskkill", ["/pid", backendProcess.pid.toString(), "/f", "/t"]);
     } else {
       backendProcess.kill();
     }

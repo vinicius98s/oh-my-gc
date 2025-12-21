@@ -4,7 +4,9 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   Character,
   getCharacterById,
+  getNextCharacterRecommendation,
   getTrackedCharacters,
+  RecommendationResponse,
   TrackedCharactersResponse,
 } from "./utils/characters";
 import {
@@ -23,6 +25,7 @@ type DataContextType = {
   dungeonsEntries: DungeonsEntriesResponse;
   playingCharacter?: Character | null;
   playingDungeon?: string | null;
+  recommendedCharacter?: RecommendationResponse;
   url: string;
   statistics?: StatisticsData;
 };
@@ -30,14 +33,12 @@ type DataContextType = {
 const DataContext = createContext<DataContextType>({
   trackedCharacters: [],
   dungeons: [],
-  dungeonsEntries: {
-    entries: [],
-    characters_entries: [],
-    characters_avg_completion_time: [],
-  },
+  dungeonsEntries: [],
   playingCharacter: null,
   playingDungeon: null,
+  recommendedCharacter: null,
   url: "",
+  statistics: undefined,
 });
 
 export function useDataContext() {
@@ -67,21 +68,38 @@ export function DataContextProvider({
   const { data: dungeons } = useQuery<DungeonsResponse>({
     queryKey: ["dungeons"],
     queryFn: () => getDungeons(url),
+    enabled: !!port,
   });
 
   const { data: trackedCharacters } = useQuery<TrackedCharactersResponse>({
     queryKey: ["tracked_characters"],
     queryFn: () => getTrackedCharacters(url),
+    enabled: !!port,
   });
 
   const { data: dungeonsEntries } = useQuery<DungeonsEntriesResponse>({
-    queryKey: ["dungeons_entries"],
-    queryFn: () => getDungeonsEntries(url),
+    queryKey: ["dungeons_entries", playingCharacter?.id],
+    queryFn: () => getDungeonsEntries(url, playingCharacter?.id || null),
+    enabled: !!port,
+    staleTime: Infinity,
   });
 
   const { data: statistics } = useQuery<StatisticsData>({
     queryKey: ["statistics"],
     queryFn: () => getStatistics(url),
+    enabled: !!port,
+  });
+
+  const { data: recommendedCharacter } = useQuery<RecommendationResponse>({
+    queryKey: ["recommendation", playingCharacter?.id, playingDungeon],
+    queryFn: () =>
+      getNextCharacterRecommendation(
+        url,
+        playingCharacter?.id || null,
+        playingDungeon || null
+      ),
+    enabled: !!port,
+    staleTime: Infinity,
   });
 
   useEffect(() => {
@@ -110,6 +128,7 @@ export function DataContextProvider({
           case "completed":
             setPlayingDungeon(null);
             queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
+            queryClient.invalidateQueries({ queryKey: ["recommendation"] });
             queryClient.invalidateQueries({ queryKey: ["statistics"] });
             break;
         }
@@ -132,9 +151,10 @@ export function DataContextProvider({
         playingCharacter,
         url,
         dungeons,
-        dungeonsEntries,
+        dungeonsEntries: dungeonsEntries || [],
         playingDungeon,
         statistics,
+        recommendedCharacter,
       }}
     >
       {children}

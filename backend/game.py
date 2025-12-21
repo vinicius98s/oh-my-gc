@@ -262,36 +262,38 @@ def capture_template(template_name, template_type):
 
 def take_screenshot(window, image_path):
     hwnd = window.getHandle()
-    w, h = window.width, window.height
 
-    hwndDC = win32gui.GetWindowDC(hwnd)
-    mfcDC = win32ui.CreateDCFromHandle(hwndDC)
-    saveDC = mfcDC.CreateCompatibleDC()
+    # Get the client area size
+    client_rect = win32gui.GetClientRect(hwnd)
+    w = client_rect[2]
+    h = client_rect[3]
 
-    saveBitMap = win32ui.CreateBitmap()
-    saveBitMap.CreateCompatibleBitmap(mfcDC, w, h)
+    if w <= 0 or h <= 0:
+        return None
 
-    saveDC.SelectObject(saveBitMap)
+    # Get the screen coordinates of the top-left corner of the client area
+    top_left = win32gui.ClientToScreen(hwnd, (0, 0))
+    x, y = top_left
 
-    result = ctypes.windll.user32.PrintWindow(hwnd, saveDC.GetSafeHdc(), 2)
+    with mss.mss() as sct:
+        # Capture the specified region
+        screenshot = sct.grab({
+            "top": y,
+            "left": x,
+            "width": w,
+            "height": h
+        })
 
-    if result == 0:
-        saveDC.BitBlt((0, 0), (w, h), mfcDC, (0, 0), win32con.SRCCOPY)
+        # Convert to numpy array (BGRA format)
+        img = np.array(screenshot)
 
-    bmpinfo = saveBitMap.GetInfo()
-    bmpstr = saveBitMap.GetBitmapBits(True)
-
-    img = np.frombuffer(bmpstr, dtype='uint8')
-    img.shape = (bmpinfo['bmHeight'], bmpinfo['bmWidth'], 4)
-
-    win32gui.DeleteObject(saveBitMap.GetHandle())
-    saveDC.DeleteDC()
-    mfcDC.DeleteDC()
-    win32gui.ReleaseDC(hwnd, hwndDC)
-
+    # Convert from BGRA to BGR for OpenCV
     img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-    cv2.imwrite(image_path, img)
+
+    # Maintain the 1920x1080 target resolution for template matching
     if img.shape[0] != 1080 or img.shape[1] != 1920:
         img = cv2.resize(img, (1920, 1080))
+
+    cv2.imwrite(image_path, img)
 
     return img

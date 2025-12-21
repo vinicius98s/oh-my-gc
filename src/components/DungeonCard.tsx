@@ -2,42 +2,21 @@ import { useState } from "react";
 import { Check, X, Pencil } from "lucide-react";
 
 import NumberInput from "./NumberInput";
-import {
-  Dungeon,
-  getCharacterDungeonEntries,
-  getCharacterDailyEntries,
-  formatDungeonAverageTime,
-} from "../utils/dungeons";
+import { Dungeon, formatDungeonAverageTime } from "../utils/dungeons";
 import { useDataContext } from "../DataContext";
 import { cn } from "../utils/lib";
 
 type DungeonCardProps = {
   dungeon: Dungeon;
-  playingCharacterId: number;
   onEdit: (dungeonId: number, value: number, mode: "weekly" | "daily") => void;
 };
 
-export default function DungeonCard({
-  dungeon,
-  playingCharacterId,
-  onEdit,
-}: DungeonCardProps) {
-  const { dungeonsEntries, playingDungeon } = useDataContext();
+export default function DungeonCard({ dungeon, onEdit }: DungeonCardProps) {
+  const { playingDungeon } = useDataContext();
   const [editingMode, setEditingMode] = useState<"weekly" | "daily" | null>(
     null
   );
   const [editedValue, setEditedValue] = useState<number | null>(null);
-
-  const weeklyEntries = getCharacterDungeonEntries(
-    dungeonsEntries,
-    dungeon.id,
-    playingCharacterId
-  );
-  const dailyEntries = getCharacterDailyEntries(
-    dungeonsEntries,
-    dungeon.id,
-    playingCharacterId
-  );
 
   const handleSave = () => {
     if (editedValue !== null && editingMode) {
@@ -46,10 +25,6 @@ export default function DungeonCard({
       setEditedValue(null);
     }
   };
-
-  const avgCompletionTime = dungeon.charactersAvgCompletionTime.find(
-    (entry) => entry.character_id === playingCharacterId
-  )?.avg_time;
 
   return (
     <div
@@ -111,7 +86,7 @@ export default function DungeonCard({
                 </button>
                 <div className="scale-90">
                   <NumberInput
-                    defaultValue={weeklyEntries}
+                    defaultValue={dungeon.entriesCount}
                     min={0}
                     max={dungeon.entryLimit}
                     onChangeValue={setEditedValue}
@@ -121,7 +96,7 @@ export default function DungeonCard({
                   onClick={handleSave}
                   className="text-white/60 hover:text-white cursor-pointer disabled:opacity-30 transition-colors"
                   disabled={
-                    editedValue === weeklyEntries || editedValue === null
+                    editedValue === dungeon.entriesCount || editedValue === null
                   }
                 >
                   <Check size={14} />
@@ -131,7 +106,7 @@ export default function DungeonCard({
               <div
                 onClick={() => {
                   setEditingMode("weekly");
-                  setEditedValue(weeklyEntries);
+                  setEditedValue(dungeon.entriesCount);
                 }}
                 className="group/item flex items-center gap-1.5 cursor-pointer hover:text-white transition-all"
               >
@@ -140,7 +115,7 @@ export default function DungeonCard({
                   className="opacity-0 group-hover/item:opacity-50 transition-opacity"
                 />
                 <span className="text-sm font-medium text-gray-300">
-                  {weeklyEntries}
+                  {dungeon.entriesCount}
                   <small className="opacity-50 ml-0.5">
                     / {dungeon.entryLimit}
                   </small>
@@ -164,7 +139,7 @@ export default function DungeonCard({
                   <X size={14} />
                 </button>
                 <NumberInput
-                  defaultValue={dailyEntries}
+                  defaultValue={dungeon.entriesCount}
                   min={0}
                   max={dungeon.entryLimit}
                   onChangeValue={setEditedValue}
@@ -172,7 +147,7 @@ export default function DungeonCard({
                 <button
                   onClick={handleSave}
                   disabled={
-                    editedValue === dailyEntries || editedValue === null
+                    editedValue === dungeon.entriesCount || editedValue === null
                   }
                   className="text-white/60 hover:text-white cursor-pointer disabled:opacity-30 transition-colors"
                 >
@@ -183,7 +158,7 @@ export default function DungeonCard({
               <div
                 onClick={() => {
                   setEditingMode("daily");
-                  setEditedValue(dailyEntries);
+                  setEditedValue(dungeon.entriesCount);
                 }}
                 className="group/item flex items-center gap-1.5 cursor-pointer hover:text-white transition-all"
               >
@@ -192,7 +167,7 @@ export default function DungeonCard({
                   className="opacity-0 group-hover/item:opacity-50 transition-opacity"
                 />
                 <span className="text-sm font-medium text-gray-300">
-                  {dailyEntries}
+                  {dungeon.entriesCount}
                   <small className="opacity-50 ml-0.5">
                     / {dungeon.entryLimit}
                   </small>
@@ -205,12 +180,10 @@ export default function DungeonCard({
         {dungeon.entryLimit === null && (
           <div className="flex items-center justify-between px-1">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              Today
+              Entries
             </span>
             <span className="text-xs font-medium text-gray-300">
-              {dungeon.charactersDailyEntries.find(
-                (entry) => entry.character_id === playingCharacterId
-              )?.entries_count || 0}
+              {dungeon.entriesCount}
             </span>
           </div>
         )}
@@ -220,7 +193,7 @@ export default function DungeonCard({
             Avg Time
           </span>
           <span className="text-xs font-semibold text-white">
-            {formatDungeonAverageTime(avgCompletionTime)}
+            {formatDungeonAverageTime(dungeon.avgTime)}
           </span>
         </div>
       </div>
