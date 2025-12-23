@@ -2,6 +2,8 @@ import time
 import threading
 import sqlite3
 import socketserver
+import signal
+import psutil
 from functools import partial
 
 from game import GameState
@@ -15,6 +17,36 @@ from server import Handler
 
 
 shutdown_event = threading.Event()
+parent_pid = None
+
+
+def handle_signal(signum, _frame):
+    print(f"[main]: Received signal {signum}, shutting down...")
+    shutdown_event.set()
+
+
+def monitor_parent():
+    """Monitor parent process and exit if parent dies."""
+    global parent_pid
+    if parent_pid is None:
+        return
+
+    try:
+        parent = psutil.Process(parent_pid)
+        while not shutdown_event.is_set():
+            try:
+                parent_status = parent.status()
+                if parent_status not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]:
+                    print(f"[main]: Parent process {parent_pid} is not alive (status: {parent_status}), shutting down...")
+                    shutdown_event.set()
+                    break
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                print(f"[main]: Parent process {parent_pid} not found, shutting down...")
+                shutdown_event.set()
+                break
+            time.sleep(0.5)
+    except Exception as e:
+        print(f"[main]: Error monitoring parent: {e}")
 
 
 def game_loop(args, broadcaster):
@@ -82,9 +114,21 @@ def run_migrations(args):
         backend.apply_migrations(backend.to_apply(migrations))
     print("[migrations]: Migrations applied successfully")
 
+
 def main():
+    global parent_pid
     args = parse_args()
-    
+
+    # Store parent PID if provided
+    if hasattr(args, 'parent_pid'):
+        parent_pid = args.parent_pid
+
+    # Register signal handlers
+    signal.signal(signal.SIGINT, handle_signal)
+    signal.signal(signal.SIGTERM, handle_signal)
+    if hasattr(signal, 'SIGBREAK'):
+        signal.signal(signal.SIGBREAK, handle_signal)
+
     run_migrations(args)
 
     broadcaster = SSEBroadcaster()
@@ -95,7 +139,14 @@ def main():
 
     run_server = threading.Thread(target=server, args=(httpd,))
     run_game_loop = threading.Thread(
-        target=game_loop, args=(args, broadcaster), daemon=True)
+        target=game_loop, args=(args, broadcaster), daemon=True
+    )
+
+    # Start parent monitor if we have a parent PID
+    parent_monitor = None
+    if parent_pid is not None:
+        parent_monitor = threading.Thread(target=monitor_parent, daemon=True)
+        parent_monitor.start()
 
     run_server.start()
     run_game_loop.start()
@@ -111,6 +162,8 @@ def main():
 
         run_server.join()
         run_game_loop.join()
+        if parent_monitor is not None:
+            parent_monitor.join()
 
 
 if __name__ == "__main__":

@@ -5,9 +5,12 @@ import { AutoUnpackNativesPlugin } from "@electron-forge/plugin-auto-unpack-nati
 import { WebpackPlugin } from "@electron-forge/plugin-webpack";
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
+import path from "path";
 
 import { mainConfig } from "./webpack.main.config";
 import { rendererConfig } from "./webpack.renderer.config";
+
+const iconPath = path.resolve(__dirname, "src/assets/icon.ico");
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -18,13 +21,15 @@ const config: ForgeConfig = {
       "./backend/templates",
       "./backend/migrations",
     ],
-    icon: "./src/assets/icon",
+    icon: "./src/assets/icon.ico",
   },
   rebuildConfig: {},
   makers: [
     new MakerSquirrel({
       setupExe: "OhMyGC-Setup.exe",
-      setupIcon: "./src/assets/icon.ico",
+      setupIcon: iconPath,
+      iconUrl:
+        "https://github.com/vinicius98s/oh-my-gc/raw/main/src/assets/icon.ico",
     }),
   ],
   publishers: [

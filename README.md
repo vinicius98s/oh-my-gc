@@ -4,93 +4,93 @@
 
 # Oh My GC
 
-**oh-my-gc** is a specialized tracker for Grand Chase, built with **Electron** and **React** for the frontend, and **Python** for the backend. It automates character discovery, dungeon tracking, and performance logging by monitoring the game window.
+**Oh My GC** is an intelligent tracker for Grand Chase that automates character discovery, dungeon tracking, and performance monitoring. Built to help players optimize their gameplay by tracking runs, characters, and statistics automatically.
 
-## 🚀 Getting Started
+## Features
 
-### Prerequisites
+- **Automatic Character Detection**: Detects which character you're playing in real-time
+- **Dungeon Tracking**: Automatically tracks which dungeons you run
+- **Run Statistics**: Keeps detailed statistics of your gameplay
+- **Schedule Builder**: Plan and organize your dungeon runs
 
-- **Node.js** (v18+ recommended)
-- **Python** (3.9+)
-- **NPM** (comes with Node.js)
+## Demo
+
+Watch it in action:
+
+https://github.com/user-attachments/assets/866b2cdf-e97f-49a9-a0cb-7fb8914d32ae
+
+## Installation
+
+### Windows
+
+1. Download the latest installer from the [Releases](https://github.com/vinicius98s/oh-my-gc/releases) page
+2. Run the `.exe` installer
+3. Launch the application from your desktop or Start menu
+
+### Building from Source
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed build instructions.
+
+## How to Use
+
+1. **Launch the Application**: Start Oh My GC and complete the onboarding setup
+2. **Start Grand Chase**: Launch the Grand Chase game client
+3. **Begin Tracking**: The app will automatically detect your character and dungeons as you play
+4. **View Statistics**: Check the Statistics page to see your gameplay data
+5. **Plan Runs**: Use the Schedule Builder to organize your dungeon runs
+
+## FAQ
+
+<details>
+<summary>How does it work?</summary>
+We take screenshots of the game and use image recognition to detect which character or dungeon you're playing.
+</details>
+
+<details>
+<summary>Does this modify the game in any way?</summary>
+No, it doesn't modify the game in any way.
+</details>
+
+<details>
+<summary>How can I uninstall?</summary>
+To uninstall Oh My GC on Windows:
+- Go to Control Panel > Uninstall a program
+- Find "Oh My GC" in the list
+- Click **Uninstall**
+</details>
+
+<details>
+<summary>The app is not detecting game changes</summary>
+Try to run the game with a 16:9 resolution. Ideally, the resolution should be 1920x1080.
+Other resolutions haven't been tested.
+</details>
+
+## Screenshots
+
+### Home Page
+
+![Home Screen](.github/assets/home.png)
+
+The home screen provides quick access to all main features, including today's schedule and quick actions.
+
+### Schedule Builder
+
+![Schedule Builder](.github/assets/schedule.png)
+
+Plan and organize your dungeon runs with the intuitive schedule builder interface.
+
+### Statistics
+
+![Statistics View](.github/assets/stats.png)
+
+View detailed statistics about your gameplay, including run counts, character usage, and more.
+
+## Support
+
+- **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/vinicius98s/oh-my-gc/issues)
+
+## Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to the project.
 
 ---
-
-### 🎨 Frontend Setup (Electron)
-
-The frontend is built using Electron Forge, React, and Tailwind CSS.
-
-1. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-2. **Run in development mode:**
-
-   ```bash
-   npm start
-   ```
-
-3. **Available Commands:**
-   - `npm start`: Starts the application in development mode with hot-reloading.
-   - `npm run package`: Packages the application for the local platform.
-   - `npm run make`: Creates distributable installers (e.g., `.exe`, `.zip`).
-   - `npm run lint`: Runs ESLint to check for code quality issues.
-
----
-
-### 🐍 Backend Setup (Python)
-
-The backend handles game state detection using OpenCV and SQLite.
-
-1. **Navigate to the backend directory:**
-
-   ```bash
-   cd backend
-   ```
-
-2. **Create and activate a virtual environment:**
-
-   ```bash
-   python -m venv .venv
-   # On Windows:
-   .venv\Scripts\activate
-   # On macOS/Linux:
-   source .venv/bin/activate
-   ```
-
-3. **Install Python dependencies:**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the backend (if running separately):**
-   ```bash
-   python main.py
-   ```
-
----
-
-## 📂 Project Structure
-
-- `src/`: React frontend logic and UI components.
-  - `src/assets/`: Static files like icons and the **logo**.
-  - `src/pages/`: Main application views.
-  - `src/utils/`: Frontend helper functions and API wrappers.
-- `backend/`: Python core logic.
-  - `backend/main.py`: Main entry point for the backend server and game loop.
-  - `backend/game.py`: Image processing and game state logic.
-  - `backend/database.py`: SQLite database management.
-- `types/`: TypeScript definitions across the project.
-- `forge.config.ts`: Configuration for Electron Forge.
-
-## 🛠️ Built With
-
-- **Frontend**: [Electron](https://www.electronjs.org/), [React](https://reactjs.org/), [Tailwind CSS](https://tailwindcss.com/)
-- **Backend**: [Python](https://www.python.org/), [OpenCV](https://opencv.org/), [SQLite](https://www.sqlite.org/)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the `package.json` file for details.

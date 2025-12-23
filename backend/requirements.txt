@@ -6,6 +6,7 @@ numpy==2.3.1
 opencv-python==4.11.0.86
 packaging==25.0
 pillow==11.3.0
+psutil==6.1.1
 pyinstaller==6.17.0
 pyinstaller-hooks-contrib==2025.10
 PyMonCtl==0.92

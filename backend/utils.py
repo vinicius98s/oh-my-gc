@@ -7,6 +7,7 @@ def parse_args():
     parser.add_argument("--templates", type=str, default="./templates", help="Directory where read-only templates are located")
     parser.add_argument("--migrations", type=str, default="./migrations", help="Directory where migration files are located")
     parser.add_argument("--TESSERACT_PATH", type=str, default="./third-party/tesseract-win64/tesseract.exe", help="Path to tesseract executable")
-    parser.add_argument("--port", type=int, default=5000, help="Port to run the backend server on")
+    parser.add_argument("--port", type=int, default=5000, help="Port to run backend server on")
+    parser.add_argument("--parent-pid", type=int, default=None, help="PID of parent process to monitor")
     args, _ = parser.parse_known_args()
     return args

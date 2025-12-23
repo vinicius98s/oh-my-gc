@@ -4,10 +4,9 @@ if (require("electron-squirrel-startup")) {
 
 import { app, BrowserWindow, ipcMain } from "electron";
 import net from "net";
-import { ChildProcessWithoutNullStreams, spawn } from "child_process";
 import path from "path";
-import fs from "fs";
 import { updateElectronApp } from "update-electron-app";
+import { BackendManager } from "./BackendManager";
 
 updateElectronApp();
 
@@ -29,66 +28,22 @@ function getRandomOpenPort(): number {
   return address.port;
 }
 
-let backendProcess: ChildProcessWithoutNullStreams | undefined;
+const backendManager = new BackendManager();
+let mainWindow: BrowserWindow | undefined;
+let isQuitting = false;
 
-const createWindow = () => {
-  const port = getRandomOpenPort();
-
-  if (app.isPackaged) {
-    const dataPath = app.getPath("userData");
-    const logPath = path.join(dataPath, "backend.log");
-    const logStream = fs.createWriteStream(logPath, { flags: "a" });
-
-    if (!fs.existsSync(dataPath)) {
-      fs.mkdirSync(dataPath, { recursive: true });
-    }
-
-    const dbPath = path.join(dataPath, "oh-my-gc.sqlite3");
-
-    if (!fs.existsSync(dbPath)) {
-      fs.writeFileSync(dbPath, "");
-    }
-
-    const tesseractPath = path.join(
-      process.resourcesPath,
-      "third-party",
-      "tesseract-win64",
-      "tesseract.exe"
-    );
-    const migrationsPath = path.join(process.resourcesPath, "migrations");
-    const templatesPath = path.join(process.resourcesPath, "templates");
-    const backendPath = path.join(process.resourcesPath, "main.exe");
-
-    backendProcess = spawn(
-      backendPath,
-      [
-        `--port=${port}`,
-        `--user-data=${dataPath}`,
-        `--templates=${templatesPath}`,
-        `--TESSERACT_PATH=${tesseractPath}`,
-        `--migrations=${migrationsPath}`,
-      ],
-      {
-        cwd: process.resourcesPath,
-        env: { ...process.env },
-        detached: false,
-        windowsHide: true,
-      }
-    );
-
-    backendProcess.stdout.pipe(logStream);
-    backendProcess.stderr.pipe(logStream);
-
-    backendProcess.on("error", (err) => {
-      fs.appendFileSync(logPath, `Failed to start backend: ${err.message}\n`);
-    });
-
-    backendProcess.on("exit", (code) => {
-      fs.appendFileSync(logPath, `Backend process exited with code ${code}\n`);
-    });
+const createWindow = async () => {
+  if (isQuitting) {
+    return;
   }
 
-  const mainWindow = new BrowserWindow({
+  const port = getRandomOpenPort();
+
+  if (!backendManager.isRunning()) {
+    await backendManager.start(port);
+  }
+
+  mainWindow = new BrowserWindow({
     height: 600,
     width: 800,
     frame: false,
@@ -99,17 +54,16 @@ const createWindow = () => {
   });
 
   mainWindow.setResizable(false);
-
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
   ipcMain.handle("get-port", () => port);
 
   ipcMain.on("minimize-window", () => {
-    mainWindow.minimize();
+    mainWindow?.minimize();
   });
 
   ipcMain.on("close-window", () => {
-    mainWindow.close();
+    mainWindow?.close();
   });
 
   mainWindow.webContents.session.webRequest.onHeadersReceived(
@@ -120,24 +74,24 @@ const createWindow = () => {
           "Content-Security-Policy": ["connect-src 'self' http://localhost:*;"],
         },
       });
-    }
+    },
   );
 };
 
 app.on("ready", createWindow);
 
-const killBackend = () => {
-  if (backendProcess && backendProcess.pid) {
-    if (process.platform === "win32") {
-      spawn("taskkill", ["/pid", backendProcess.pid.toString(), "/f", "/t"]);
-    } else {
-      backendProcess.kill();
-    }
+app.on("before-quit", async (event) => {
+  if (isQuitting) {
+    return;
   }
-};
 
-app.on("before-quit", killBackend);
-app.on("will-quit", killBackend);
+  isQuitting = true;
+  event.preventDefault();
+
+  await backendManager.kill();
+
+  app.exit(0);
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
@@ -145,8 +99,8 @@ app.on("window-all-closed", () => {
   }
 });
 
-app.on("activate", () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+app.on("activate", async () => {
+  if (!isQuitting && !mainWindow) {
+    await createWindow();
   }
 });
