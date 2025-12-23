@@ -6,9 +6,6 @@ import pywinctl as pwc
 import numpy as np
 import re
 import win32gui
-import win32ui
-import win32con
-import ctypes
 from rapidfuzz import fuzz
 
 from utils import parse_args
@@ -83,6 +80,9 @@ class GameState:
             return False
 
     def complete_dungeon_entry(self, entry_id):
+        if entry_id is None:
+            return
+
         cursor = self.DB.cursor()
         update = """
             UPDATE dungeons_entries
@@ -93,7 +93,7 @@ class GameState:
         self.DB.commit()
         self.broadcaster.broadcast(
             event="dungeons",
-            data={"type": "completed", "dungeon_entry_id": entry_id}
+            data={"type": "completed_dungeon"}
         )
 
     def match_completed_text(self, text):
@@ -185,7 +185,7 @@ class GameState:
                 self.DB.commit()
                 self.broadcaster.broadcast(
                     event="dungeons",
-                    data={"type": "start", "dungeon": dungeon}
+                    data={"type": "started_dungeon", "dungeon_id": dungeon_id}
                 )
 
                 return (entry_id, dungeon_id)

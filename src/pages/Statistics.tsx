@@ -15,12 +15,12 @@ export default function Statistics() {
     );
   }
 
-  const mostPlayedDungeon = stats.most_played_dungeon
-    ? dungeons.find((d) => d.id === stats.most_played_dungeon!.id)
+  const mostPlayedDungeon = stats.mostPlayedDungeon
+    ? dungeons.find((d) => d.id === stats.mostPlayedDungeon.id)
     : null;
 
-  const mostPlayedCharacter = stats.most_played_character
-    ? getCharacterById(stats.most_played_character.id)
+  const mostPlayedCharacter = stats.mostPlayedCharacter
+    ? getCharacterById(stats.mostPlayedCharacter.id)
     : null;
 
   const formatTotalTime = (seconds: number) => {
@@ -33,7 +33,7 @@ export default function Statistics() {
   const mainStats = [
     {
       label: "Total Runs",
-      value: stats.total_runs.toString(),
+      value: stats.totalRuns.toString(),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +52,7 @@ export default function Statistics() {
     },
     {
       label: "Total Time Spent",
-      value: formatTotalTime(stats.total_time_spent),
+      value: formatTotalTime(stats.totalTimeSpent),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +70,7 @@ export default function Statistics() {
     },
     {
       label: "Global Avg Time",
-      value: formatDungeonAverageTime(stats.avg_clear_time),
+      value: formatDungeonAverageTime(stats.avgClearTime),
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -123,7 +123,7 @@ export default function Statistics() {
             {mostPlayedDungeon && (
               <div
                 className="absolute inset-0 opacity-10 blur-3xl transition-opacity duration-500 group-hover:opacity-20 translate-x-1/2"
-                style={{ backgroundColor: mostPlayedDungeon.accent_color }}
+                style={{ backgroundColor: mostPlayedDungeon.accentColor }}
               />
             )}
 
@@ -134,15 +134,15 @@ export default function Statistics() {
                     <div
                       className="absolute -inset-1 rounded-lg opacity-30 blur group-hover:opacity-50 transition-opacity"
                       style={{
-                        backgroundColor: mostPlayedDungeon.accent_color,
+                        backgroundColor: mostPlayedDungeon.accentColor,
                       }}
                     />
                     <img
                       src={getDungeonImage(mostPlayedDungeon.id)}
-                      alt={mostPlayedDungeon.display_name}
+                      alt={mostPlayedDungeon.displayName}
                       className="w-18 relative rounded-lg object-cover border border-white/10 shadow-2xl"
                       style={{
-                        borderColor: mostPlayedDungeon.accent_color,
+                        borderColor: mostPlayedDungeon.accentColor,
                       }}
                     />
                   </>
@@ -156,11 +156,11 @@ export default function Statistics() {
                   Most Played Dungeon
                 </p>
                 <h3 className="text-lg font-bold text-white mb-1">
-                  {mostPlayedDungeon?.display_name || "—"}
+                  {mostPlayedDungeon?.displayName || "—"}
                 </h3>
                 <p className="mt-auto text-sm text-gray-400">
                   <span className="text-white font-bold">
-                    {stats.most_played_dungeon?.count || 0}
+                    {stats.mostPlayedDungeon?.count || 0}
                   </span>{" "}
                   runs completed
                 </p>
@@ -209,7 +209,7 @@ export default function Statistics() {
                 </h3>
                 <p className="mt-auto text-sm text-gray-400">
                   <span className="text-white font-bold">
-                    {stats.most_played_character?.count || 0}
+                    {stats.mostPlayedCharacter?.count || 0}
                   </span>{" "}
                   runs completed
                 </p>

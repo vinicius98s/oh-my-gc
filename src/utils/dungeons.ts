@@ -38,26 +38,26 @@ export type Dungeon = {
 export type DungeonsResponse = {
   id: number;
   name: string;
-  display_name: string;
+  displayName: string;
   type: DungeonType;
-  entry_limit: number | null;
-  entry_period: string | null;
-  reset_day: number | null;
-  accent_color: string;
+  entryLimit: number | null;
+  entryPeriod: string | null;
+  resetDay: number | null;
+  accentColor: string;
 }[];
 
 export type DungeonsEntriesResponse = {
-  dungeon_id: number;
-  entries_count: number;
-  avg_time: number | null;
+  dungeonId: number;
+  entriesCount: number;
+  avgTime: number | null;
 }[];
 
 export type StatisticsData = {
-  total_runs: number;
-  total_time_spent: number;
-  most_played_dungeon: { id: number; count: number } | null;
-  most_played_character: { id: number; count: number } | null;
-  avg_clear_time: number;
+  totalRuns: number;
+  totalTimeSpent: number;
+  mostPlayedDungeon: { id: number; count: number } | null;
+  mostPlayedCharacter: { id: number; count: number } | null;
+  avgClearTime: number;
 };
 
 export function getDungeonImage(id: number) {
@@ -127,23 +127,23 @@ export function formatDungeons(
   entries: DungeonsEntriesResponse
 ): Dungeon[] {
   return dungeons.map((d) => {
-    const entry = entries.find((e) => e.dungeon_id === d.id) || {
-      entries_count: 0,
-      avg_time: null as null,
+    const entry = entries.find((e) => e.dungeonId === d.id) || {
+      entriesCount: 0,
+      avgTime: null as null,
     };
 
     return {
       id: d.id,
       name: d.name,
       type: d.type,
-      displayName: d.display_name,
+      displayName: d.displayName,
       image: getDungeonImage(d.id),
-      entryLimit: d.entry_limit,
-      entryPeriod: d.entry_period as "daily" | "weekly" | null,
-      resetDay: d.reset_day,
-      accentColor: d.accent_color,
-      entriesCount: entry.entries_count,
-      avgTime: entry.avg_time,
+      entryLimit: d.entryLimit,
+      entryPeriod: d.entryPeriod as "daily" | "weekly" | null,
+      resetDay: d.resetDay,
+      accentColor: d.accentColor,
+      entriesCount: entry.entriesCount,
+      avgTime: entry.avgTime,
     };
   });
 }

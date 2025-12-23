@@ -18,7 +18,7 @@ import {
 export default function Home() {
   const {
     playingCharacter,
-    playingDungeon,
+    playingDungeonId,
     dungeons,
     dungeonsEntries,
     trackedCharacters,
@@ -70,8 +70,8 @@ export default function Home() {
   }, [formattedDungeons]);
 
   const currentlyPlayingDungeon = useMemo(
-    () => formattedDungeons.find((d) => d.name === playingDungeon),
-    [formattedDungeons, playingDungeon]
+    () => formattedDungeons.find((d) => d.id === playingDungeonId),
+    [formattedDungeons, playingDungeonId]
   );
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });

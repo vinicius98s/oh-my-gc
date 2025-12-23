@@ -24,7 +24,7 @@ type DataContextType = {
   dungeons: DungeonsResponse;
   dungeonsEntries: DungeonsEntriesResponse;
   playingCharacter?: Character | null;
-  playingDungeon?: string | null;
+  playingDungeonId?: number | null;
   recommendedCharacter?: RecommendationResponse;
   url: string;
   statistics?: StatisticsData;
@@ -35,7 +35,7 @@ const DataContext = createContext<DataContextType>({
   dungeons: [],
   dungeonsEntries: [],
   playingCharacter: null,
-  playingDungeon: null,
+  playingDungeonId: null,
   recommendedCharacter: null,
   url: "",
   statistics: undefined,
@@ -56,10 +56,12 @@ export function DataContextProvider({
   children: React.ReactNode;
 }) {
   const [port, setPort] = useState<number>();
-  const [playingDungeon, setPlayingDungeon] = useState<string | null>(null);
+  const [playingDungeonId, setPlayingDungeonId] = useState<number | null>(null);
   const [playingCharacter, setPlayingCharacter] = useState<
     Character | null | undefined
   >(null);
+  const [recommendation, setRecommendation] =
+    useState<RecommendationResponse | null>(null);
 
   const url = `http://localhost:${port}`;
 
@@ -91,16 +93,26 @@ export function DataContextProvider({
   });
 
   const { data: recommendedCharacter } = useQuery<RecommendationResponse>({
-    queryKey: ["recommendation", playingCharacter?.id, playingDungeon],
+    queryKey: ["recommendation", playingCharacter?.id, playingDungeonId],
     queryFn: () =>
       getNextCharacterRecommendation(
         url,
         playingCharacter?.id || null,
-        playingDungeon || null
+        playingDungeonId || null
       ),
-    enabled: !!port,
+    enabled: !!port && playingDungeonId !== null,
     staleTime: Infinity,
   });
+
+  useEffect(() => {
+    if (playingCharacter?.id === recommendation?.id) {
+      setRecommendation(null);
+    }
+
+    if (!!recommendedCharacter) {
+      setRecommendation(recommendedCharacter);
+    }
+  }, [recommendedCharacter, playingCharacter]);
 
   useEffect(() => {
     window.api.getPort().then(setPort);
@@ -115,20 +127,20 @@ export function DataContextProvider({
       });
 
       evtSource.addEventListener("dungeons", (e: MessageEvent) => {
-        const { type, dungeon } = JSON.parse(e.data.replaceAll("'", '"'));
+        const { type, dungeon_id } = JSON.parse(e.data.replaceAll("'", '"'));
         switch (type) {
-          case "start":
-            setPlayingDungeon(dungeon);
+          case "started_dungeon":
+            queryClient.invalidateQueries({ queryKey: ["recommendation"] });
+            setPlayingDungeonId(dungeon_id);
             break;
 
           case "not_playing":
-            setPlayingDungeon(null);
+            setPlayingDungeonId(null);
             break;
 
-          case "completed":
-            setPlayingDungeon(null);
+          case "completed_dungeon":
+            setPlayingDungeonId(null);
             queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
-            queryClient.invalidateQueries({ queryKey: ["recommendation"] });
             queryClient.invalidateQueries({ queryKey: ["statistics"] });
             break;
         }
@@ -151,10 +163,10 @@ export function DataContextProvider({
         playingCharacter,
         url,
         dungeons,
-        dungeonsEntries: dungeonsEntries || [],
-        playingDungeon,
+        dungeonsEntries,
+        playingDungeonId,
         statistics,
-        recommendedCharacter,
+        recommendedCharacter: recommendation,
       }}
     >
       {children}

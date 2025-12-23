@@ -12,7 +12,7 @@ type DungeonCardProps = {
 };
 
 export default function DungeonCard({ dungeon, onEdit }: DungeonCardProps) {
-  const { playingDungeon } = useDataContext();
+  const { playingDungeonId } = useDataContext();
   const [editingMode, setEditingMode] = useState<"weekly" | "daily" | null>(
     null
   );
@@ -30,7 +30,7 @@ export default function DungeonCard({ dungeon, onEdit }: DungeonCardProps) {
     <div
       className={cn(
         "relative group flex flex-col items-center p-4 rounded-2xl border transition-all duration-300 overflow-hidden",
-        dungeon.name === playingDungeon
+        dungeon.id === playingDungeonId
           ? "animate-playing ring-2 ring-white/10"
           : "hover:shadow-xl"
       )}
@@ -39,7 +39,7 @@ export default function DungeonCard({ dungeon, onEdit }: DungeonCardProps) {
         backdropFilter: "blur(12px)",
         borderColor: `${dungeon.accentColor}33`,
         boxShadow:
-          dungeon.name === playingDungeon
+          dungeon.id === playingDungeonId
             ? `0 0 20px ${dungeon.accentColor}40`
             : "none",
       }}
@@ -54,14 +54,14 @@ export default function DungeonCard({ dungeon, onEdit }: DungeonCardProps) {
           src={dungeon.image}
           className={cn(
             "rounded-xl size-14 object-cover shadow-lg transition-transform duration-300 group-hover:scale-110",
-            dungeon.name === playingDungeon && "animate-pulse"
+            dungeon.id === playingDungeonId && "animate-pulse"
           )}
           alt={dungeon.displayName}
           style={{
             border: `2px solid ${dungeon.accentColor}4D`,
           }}
         />
-        {dungeon.name === playingDungeon && (
+        {dungeon.id === playingDungeonId && (
           <div className="absolute -bottom-1 -right-1 size-3 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
         )}
       </div>
