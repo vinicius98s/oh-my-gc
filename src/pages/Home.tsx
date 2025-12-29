@@ -9,10 +9,12 @@ import { getCharacterById } from "../utils/characters";
 import DungeonsList from "../components/DungeonsList";
 import GameStatus from "../components/GameStatus";
 import TodayScheduleCard from "../components/TodayScheduleCard";
+import ScheduleETC from "../components/ScheduleETC";
 import {
   formatDungeons,
   isDungeonComplete,
   getDungeonProgressText,
+  calculateDungeonsETC,
 } from "../utils/dungeons";
 
 export default function Home() {
@@ -56,8 +58,12 @@ export default function Home() {
   };
 
   const formattedDungeons = useMemo(
-    () => formatDungeons(dungeons, dungeonsEntries),
-    [dungeons, dungeonsEntries]
+    () =>
+      formatDungeons(
+        dungeons,
+        dungeonsEntries.filter((e) => e.characterId === playingCharacter?.id)
+      ),
+    [dungeons, dungeonsEntries, playingCharacter?.id]
   );
 
   const sortedDungeons = useMemo(() => {
@@ -96,6 +102,46 @@ export default function Home() {
     return getCharacterById(recommendedCharacter.id);
   }, [recommendedCharacter]);
 
+  const characterETC = useMemo(
+    () => calculateDungeonsETC(todayDungeons),
+    [todayDungeons]
+  );
+
+  const dayETC = useMemo(() => {
+    let totalSeconds = 0;
+    let hasUnknown = false;
+    let allFinished = true;
+
+    for (const char of trackedCharacters) {
+      const charScheduleIds = char.schedule?.[today] || [];
+      const charDungeons = charScheduleIds
+        .map((id) => {
+          const d = dungeons.find((d) => d.id === id);
+          if (!d) return null;
+          const entry = dungeonsEntries.find(
+            (e) => e.dungeonId === id && e.characterId === char.id
+          ) || { entriesCount: 0, avgTime: null as number | null };
+          return {
+            ...d,
+            entriesCount: entry.entriesCount,
+            avgTime: entry.avgTime,
+          } as any;
+        })
+        .filter((d) => !!d);
+
+      const etc = calculateDungeonsETC(charDungeons);
+      totalSeconds += etc.totalSeconds;
+      if (etc.hasMissingData) hasUnknown = true;
+      if (!etc.isComplete) allFinished = false;
+    }
+
+    return {
+      totalSeconds,
+      hasMissingData: hasUnknown,
+      isComplete: allFinished,
+    };
+  }, [trackedCharacters, today, dungeons, dungeonsEntries]);
+
   const isAllDone = !nextCharacter && isCurrentScheduleComplete;
 
   return (
@@ -114,9 +160,10 @@ export default function Home() {
           <>
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-md font-bold text-white">
-                  Today's Schedule{" "}
-                  <span className="text-light-blue text-sm">({today})</span>
+                <h2 className="text-md font-bold text-white flex items-center gap-2">
+                  Today's Schedule:{" "}
+                  <span className="text-light-blue">{today}</span>
+                  <ScheduleETC characterETC={characterETC} dayETC={dayETC} />
                 </h2>
                 <Button
                   onClick={() => setIsScheduleBuilderOpen(true)}

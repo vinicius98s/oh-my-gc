@@ -32,11 +32,11 @@ def get_dungeon_stats(cursor, dungeon_id, character_id, entry_period, reset_day)
     avg_time_query = """
         SELECT AVG((julianday(finished_at) - julianday(started_at)) * 86400)
         FROM dungeons_entries
-        WHERE dungeon_id = ? AND character_id = ?
+        WHERE dungeon_id = ?
         AND finished_at IS NOT NULL
         AND finished_at != started_at
     """
-    avg_time = cursor.execute(avg_time_query, (dungeon_id, character_id)).fetchone()[0]
+    avg_time = cursor.execute(avg_time_query, (dungeon_id,)).fetchone()[0]
     
     return count, avg_time
 
@@ -88,24 +88,30 @@ def get_dungeons(DB):
 def get_dungeons_entries(DB, character_id):
     try:
         cursor = DB.cursor()
-
-        # Get all dungeons first to ensure they are all included in the response
         dungeons = cursor.execute("SELECT id, entry_period, reset_day FROM dungeons").fetchall()
-        
-        # Get weekly/daily entry counts per character per dungeon
-        # We'll calculate this in Python to handle the NULL entry_period logic more clearly
-        # and ensure all dungeons are represented.
-        
         entries_data = []
 
-        for d_id, entry_period, reset_day in dungeons:
-            count, avg_time = get_dungeon_stats(cursor, d_id, character_id, entry_period, reset_day)
-
-            entries_data.append({
-                "dungeonId": d_id,
-                "entriesCount": count,
-                "avgTime": avg_time
-            })
+        if character_id is not None:
+            for d_id, entry_period, reset_day in dungeons:
+                count, avg_time = get_dungeon_stats(cursor, d_id, character_id, entry_period, reset_day)
+                entries_data.append({
+                    "dungeonId": d_id,
+                    "characterId": int(character_id),
+                    "entriesCount": count,
+                    "avgTime": avg_time
+                })
+        else:
+            chars = cursor.execute("SELECT id FROM characters WHERE tracking = 1").fetchall()
+            for char_row in chars:
+                char_id = char_row[0]
+                for d_id, entry_period, reset_day in dungeons:
+                    count, avg_time = get_dungeon_stats(cursor, d_id, char_id, entry_period, reset_day)
+                    entries_data.append({
+                        "dungeonId": d_id,
+                        "characterId": char_id,
+                        "entriesCount": count,
+                        "avgTime": avg_time
+                    })
 
         return json.dumps({
             "data": entries_data

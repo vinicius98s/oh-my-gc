@@ -48,6 +48,7 @@ export type DungeonsResponse = {
 
 export type DungeonsEntriesResponse = {
   dungeonId: number;
+  characterId: number;
   entriesCount: number;
   avgTime: number | null;
 }[];
@@ -108,9 +109,11 @@ export async function getDungeonsEntries(
   baseUrl: string,
   characterId: number | null
 ): Promise<DungeonsEntriesResponse> {
-  if (!characterId) return [];
+  const params = new URLSearchParams();
+  if (characterId) params.append("character_id", characterId.toString());
+
   const response = await fetch(
-    `${baseUrl}/dungeons_entries?character_id=${characterId}`
+    `${baseUrl}/dungeons_entries?${params.toString()}`
   );
   const { data } = await response.json();
   return data;
@@ -156,4 +159,48 @@ export function isDungeonComplete(dungeon: Dungeon): boolean {
 export function getDungeonProgressText(dungeon: Dungeon): string {
   if (dungeon.entryLimit === null) return "";
   return `${dungeon.entriesCount}/${dungeon.entryLimit}`;
+}
+
+export function calculateDungeonsETC(dungeons: Dungeon[]): {
+  totalSeconds: number;
+  isComplete: boolean;
+  hasMissingData: boolean;
+} {
+  let totalSeconds = 0;
+  let hasMissingData = false;
+  let hasAnyDungeonToFinish = false;
+
+  for (const dungeon of dungeons) {
+    if (dungeon.entryLimit === null) continue;
+
+    const remaining = Math.max(0, dungeon.entryLimit - dungeon.entriesCount);
+    if (remaining <= 0) continue;
+
+    hasAnyDungeonToFinish = true;
+
+    if (dungeon.avgTime && dungeon.avgTime > 0) {
+      totalSeconds += dungeon.avgTime * remaining;
+    } else {
+      hasMissingData = true;
+    }
+  }
+
+  return {
+    totalSeconds,
+    isComplete: !hasAnyDungeonToFinish,
+    hasMissingData,
+  };
+}
+
+export function formatETC(seconds: number): string {
+  if (seconds === 0) return "--";
+
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.round(seconds % 60);
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
 }

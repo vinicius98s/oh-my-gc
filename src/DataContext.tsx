@@ -80,8 +80,8 @@ export function DataContextProvider({
   });
 
   const { data: dungeonsEntries } = useQuery<DungeonsEntriesResponse>({
-    queryKey: ["dungeons_entries", playingCharacter?.id],
-    queryFn: () => getDungeonsEntries(url, playingCharacter?.id || null),
+    queryKey: ["dungeons_entries"],
+    queryFn: () => getDungeonsEntries(url, null),
     enabled: !!port,
     staleTime: Infinity,
   });
