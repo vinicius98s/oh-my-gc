@@ -4,7 +4,7 @@
 
 # Oh My GC
 
-**Oh My GC** is an intelligent tracker for Grand Chase that automates character discovery and dungeon tracking. Built to help players optimize their gameplay by tracking runs, characters, and statistics automatically.
+**Oh My GC** is a run tracker for Grand Chase. Built to help players optimize their gameplay by tracking runs, characters, and statistics automatically.
 
 ## Features
 
@@ -34,7 +34,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed build instructions.
 ## How to Use
 
 1. **Launch the Application**: Start Oh My GC and complete the onboarding setup
-2. **Start Grand Chase**: Launch the Grand Chase game client
+2. **Start Grand Chase**: Launch the game
 3. **Begin Tracking**: The app will automatically detect your character and dungeons as you play
 4. **View Statistics**: Check the Statistics page to see your gameplay data
 5. **Plan Runs**: Use the Schedule Builder to organize your dungeon runs
@@ -54,6 +54,7 @@ No, it doesn't modify the game in any way.
 <details>
 <summary>How can I uninstall?</summary>
 To uninstall Oh My GC on Windows:
+  
 - Go to Control Panel > Uninstall a program
 - Find "Oh My GC" in the list
 - Click Uninstall
