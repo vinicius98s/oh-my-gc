@@ -30,7 +30,7 @@ export default function SchedulerBuilder({
   initialSchedules,
   onConfirm,
 }: SchedulerBuilderProps) {
-  const { dungeons, dungeonsEntries } = useDataContext();
+  const { dungeons, dungeonsEntries, characters } = useDataContext();
 
   const formattedDungeons = formatDungeons(dungeons, dungeonsEntries);
 
@@ -48,9 +48,9 @@ export default function SchedulerBuilder({
   const currentCharacter = useMemo(
     () =>
       selectedBuilderCharacterId
-        ? getCharacterById(selectedBuilderCharacterId)
+        ? getCharacterById(selectedBuilderCharacterId, characters)
         : null,
-    [selectedBuilderCharacterId]
+    [selectedBuilderCharacterId, characters]
   );
 
   const handleSaveDungeons = (dungeonIds: number[]) => {
@@ -97,7 +97,7 @@ export default function SchedulerBuilder({
       {selectedCharacterIds.length > 1 ? (
         <div className="w-24 flex-shrink-0 flex flex-col gap-4 overflow-y-auto pr-2 min-h-0 border-r border-white/10">
           {selectedCharacterIds.map((charId) => {
-            const character = getCharacterById(charId);
+            const character = getCharacterById(charId, characters);
             if (!character) return null;
             const isSelected = charId === selectedBuilderCharacterId;
 

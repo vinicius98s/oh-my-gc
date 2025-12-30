@@ -30,7 +30,6 @@ The frontend is built using Electron Forge, React, and Tailwind CSS.
 
 3. **Available Commands:**
    - `npm start`: Starts the application in development mode with hot-reloading.
-   - `npm run package`: Packages the application for the local platform.
    - `npm run make`: Creates distributable installers (e.g., `.exe`, `.zip`).
    - `npm run lint`: Runs ESLint to check for code quality issues.
 
@@ -62,7 +61,11 @@ The backend handles game state detection using OpenCV and SQLite.
    pip install -r requirements.txt
    ```
 
-4. **Run the backend (if running separately):**
+4. **Install Tesseract**
+   - Download and install Tesseract from [here](https://github.com/UB-Mannheim/tesseract/wiki)
+   - It should be installed in the `/backend/third_party/tesseract-win64` directory
+
+5. **Run the backend (if running separately):**
 
    ```bash
    python main.py
@@ -84,7 +87,7 @@ The backend handles game state detection using OpenCV and SQLite.
 **Key Directories:**
 
 - `src/`: React frontend logic and UI components.
-  - `src/assets/`: Static files like icons and the **logo**.
+  - `src/assets/`: Static files like icons and the logo.
   - `src/components/`: Reusable UI components (Button, Modal, DungeonCard, etc.)
   - `src/pages/`: Main application views (Home, Onboarding, Statistics)
   - `src/utils/`: Frontend helper functions and API wrappers
@@ -104,7 +107,6 @@ The backend handles game state detection using OpenCV and SQLite.
 - **Python 3.9+**: Core language
 - **OpenCV (cv2)**: Image processing and template matching
 - **SQLite**: Local database storage
-- **FastAPI/Flask**: Web server for API endpoints
 
 **Key Files:**
 
@@ -115,14 +117,6 @@ The backend handles game state detection using OpenCV and SQLite.
 - `backend/sse.py`: Server-Sent Events for real-time updates
 - `backend/utils.py`: Helper functions
 
-**Database Structure:**
-
-The application uses SQLite with the following migrations:
-
-- `backend/migrations/20250703_01_lpcSS-add-characters-table.sql`
-- `backend/migrations/20250703_02_nHRg8-add-dungeons-table.sql`
-- `backend/migrations/20251214_01_HBiJB-create-character-schedules-table.sql`
-
 ### Communication Architecture
 
 The frontend and backend communicate via:
@@ -130,24 +124,6 @@ The frontend and backend communicate via:
 1. **HTTP API**: RESTful endpoints for data retrieval and updates
 2. **Server-Sent Events (SSE)**: Real-time updates for game state changes
 3. **IPC (Inter-Process Communication)**: Electron-specific communication
-
-## Development Workflow
-
-### Code Style
-
-- **Frontend**: Follow ESLint rules defined in `.eslintrc.json`
-- **Backend**: Follow PEP 8 Python style guidelines
-- Use TypeScript for all new frontend code
-- Add type definitions for any new data structures
-
-### Git Workflow
-
-1. Create a new branch for your feature or bugfix
-2. Make your changes following the code style guidelines
-3. Test your changes thoroughly
-4. Run `npm run lint` before committing
-5. Commit with clear, descriptive messages
-6. Push and create a pull request
 
 ### Testing
 
@@ -158,36 +134,9 @@ Before submitting a PR:
 - Verify backend Python scripts run correctly
 - Test the complete user flow
 
-## Adding New Features
-
-### Adding a New Character
-
-1. Add character image to `backend/templates/characters/` and `src/assets/characters/`
-2. Add character data to `src/utils/characters.ts`
-3. Update database if necessary via migration
-
-### Adding a New Dungeon
-
-1. Add dungeon image to `backend/templates/dungeons/` and `src/assets/dungeons/`
-2. Add dungeon data to `src/utils/dungeons.ts`
-3. Update database schema if needed
-
-### Adding a New Page/Component
-
-1. Create component in `src/components/` or page in `src/pages/`
-2. Follow existing component patterns
-3. Use Tailwind CSS for styling
-4. Add TypeScript types in `types/` if needed
-
 ## Troubleshooting
 
 ### Common Issues
-
-**OpenCV not found:**
-
-```bash
-pip install opencv-python
-```
 
 **Electron not starting:**
 

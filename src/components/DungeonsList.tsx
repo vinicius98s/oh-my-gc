@@ -39,6 +39,9 @@ export default function DungeonsList({ dungeons }: Props) {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
+          queryClient.invalidateQueries({
+            queryKey: ["recommendation", playingCharacter.id, dungeonId],
+          });
         },
       }
     );

@@ -4,7 +4,7 @@
 
 # Oh My GC
 
-**Oh My GC** is an intelligent tracker for Grand Chase that automates character discovery, dungeon tracking, and performance monitoring. Built to help players optimize their gameplay by tracking runs, characters, and statistics automatically.
+**Oh My GC** is an intelligent tracker for Grand Chase that automates character discovery and dungeon tracking. Built to help players optimize their gameplay by tracking runs, characters, and statistics automatically.
 
 ## Features
 
@@ -56,13 +56,21 @@ No, it doesn't modify the game in any way.
 To uninstall Oh My GC on Windows:
 - Go to Control Panel > Uninstall a program
 - Find "Oh My GC" in the list
-- Click **Uninstall**
+- Click Uninstall
 </details>
 
 <details>
 <summary>The app is not detecting game changes</summary>
 Try to run the game with a 16:9 resolution. Ideally, the resolution should be 1920x1080.
 Other resolutions haven't been tested.
+</details>
+
+<details>
+<summary>What else do you plan to add?</summary>
+Currently, I have plans to add:
+- An overlay, for those who have one monitor
+- An equipment progress tracker
+- Rewards tracker
 </details>
 
 ## Screenshots

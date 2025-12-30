@@ -59,6 +59,7 @@ export type StatisticsData = {
   mostPlayedDungeon: { id: number; count: number } | null;
   mostPlayedCharacter: { id: number; count: number } | null;
   avgClearTime: number;
+  isAllDone: boolean;
 };
 
 export function getDungeonImage(id: number) {

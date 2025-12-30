@@ -45,7 +45,7 @@ export default function ScheduleETC({
       <div className="w-[1px] h-6 bg-white/10 self-center" />
       <div className="flex flex-col">
         <span className="text-[10px] text-gray-400 uppercase font-bold leading-tight">
-          Total Day ETC
+          Today ETC
         </span>
         <span className="text-xs text-white font-medium flex items-center gap-1">
           {dayETC.isComplete ? (

@@ -6,6 +6,7 @@ from utils import parse_args
 from database import (
     get_dungeons,
     get_dungeons_entries,
+    get_characters,
     get_tracked_characters,
     update_tracked_characters,
     update_dungeon_entries,
@@ -95,6 +96,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             args = parse_args()
             with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
                 response = get_dungeons(DB)
+                if response is None:
+                    self.send_error(500, "Server Error")
+                else:
+                    self.wfile.write(response.encode())
+
+        elif self.path == "/characters":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            args = parse_args()
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
+                response = get_characters(DB)
                 if response is None:
                     self.send_error(500, "Server Error")
                 else:

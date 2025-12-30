@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   Character,
   getCharacterById,
+  getCharacters,
   getNextCharacterRecommendation,
   getTrackedCharacters,
   RecommendationResponse,
@@ -21,22 +22,26 @@ import Loading from "./components/Loading";
 
 type DataContextType = {
   trackedCharacters: TrackedCharactersResponse;
+  characters: Character[];
   dungeons: DungeonsResponse;
   dungeonsEntries: DungeonsEntriesResponse;
   playingCharacter?: Character | null;
   playingDungeonId?: number | null;
   recommendedCharacter?: RecommendationResponse;
+  setRecommendation: (rec: RecommendationResponse | null) => void;
   url: string;
   statistics?: StatisticsData;
 };
 
 const DataContext = createContext<DataContextType>({
   trackedCharacters: [],
+  characters: [],
   dungeons: [],
   dungeonsEntries: [],
   playingCharacter: null,
   playingDungeonId: null,
   recommendedCharacter: null,
+  setRecommendation: () => {},
   url: "",
   statistics: undefined,
 });
@@ -73,6 +78,12 @@ export function DataContextProvider({
     enabled: !!port,
   });
 
+  const { data: characters } = useQuery<Character[]>({
+    queryKey: ["characters"],
+    queryFn: () => getCharacters(url),
+    enabled: !!port,
+  });
+
   const { data: trackedCharacters } = useQuery<TrackedCharactersResponse>({
     queryKey: ["tracked_characters"],
     queryFn: () => getTrackedCharacters(url),
@@ -105,7 +116,7 @@ export function DataContextProvider({
   });
 
   useEffect(() => {
-    if (playingCharacter?.id === recommendation?.id) {
+    if (playingCharacter?.id === recommendation?.recommendation?.id) {
       setRecommendation(null);
     }
 
@@ -123,7 +134,9 @@ export function DataContextProvider({
       const evtSource = new EventSource(`${url}/events`);
 
       evtSource.addEventListener("character", (e: MessageEvent) => {
-        setPlayingCharacter(getCharacterById(e.data));
+        if (characters) {
+          setPlayingCharacter(getCharacterById(e.data, characters));
+        }
       });
 
       evtSource.addEventListener("dungeons", (e: MessageEvent) => {
@@ -146,7 +159,7 @@ export function DataContextProvider({
         }
       });
     }
-  }, [port]);
+  }, [port, characters]);
 
   if (!port || !trackedCharacters || !dungeons || !dungeonsEntries) {
     return (
@@ -160,6 +173,7 @@ export function DataContextProvider({
     <DataContext.Provider
       value={{
         trackedCharacters,
+        characters: characters || [],
         playingCharacter,
         url,
         dungeons,
@@ -167,6 +181,7 @@ export function DataContextProvider({
         playingDungeonId,
         statistics,
         recommendedCharacter: recommendation,
+        setRecommendation,
       }}
     >
       {children}

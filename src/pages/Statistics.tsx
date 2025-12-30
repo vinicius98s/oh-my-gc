@@ -3,7 +3,7 @@ import { formatDungeonAverageTime, getDungeonImage } from "../utils/dungeons";
 import { getCharacterById } from "../utils/characters";
 
 export default function Statistics() {
-  const { statistics: stats, dungeons } = useDataContext();
+  const { statistics: stats, dungeons, characters } = useDataContext();
 
   if (!stats) {
     return (
@@ -20,7 +20,7 @@ export default function Statistics() {
     : null;
 
   const mostPlayedCharacter = stats.mostPlayedCharacter
-    ? getCharacterById(stats.mostPlayedCharacter.id)
+    ? getCharacterById(stats.mostPlayedCharacter.id, characters)
     : null;
 
   const formatTotalTime = (seconds: number) => {

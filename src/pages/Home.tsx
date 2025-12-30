@@ -21,11 +21,14 @@ export default function Home() {
   const {
     playingCharacter,
     playingDungeonId,
+    characters,
     dungeons,
     dungeonsEntries,
     trackedCharacters,
     recommendedCharacter,
     url,
+    statistics,
+    setRecommendation,
   } = useDataContext();
 
   const [isScheduleBuilderOpen, setIsScheduleBuilderOpen] = useState(false);
@@ -45,6 +48,7 @@ export default function Home() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tracked_characters"] });
+      setRecommendation(null);
       setIsScheduleBuilderOpen(false);
     },
   });
@@ -98,9 +102,9 @@ export default function Home() {
   }, [playingCharacter, todayDungeons]);
 
   const nextCharacter = useMemo(() => {
-    if (!recommendedCharacter) return undefined;
-    return getCharacterById(recommendedCharacter.id);
-  }, [recommendedCharacter]);
+    if (!recommendedCharacter?.recommendation) return;
+    return getCharacterById(recommendedCharacter.recommendation.id, characters);
+  }, [recommendedCharacter, characters]);
 
   const characterETC = useMemo(
     () => calculateDungeonsETC(todayDungeons),
@@ -142,7 +146,7 @@ export default function Home() {
     };
   }, [trackedCharacters, today, dungeons, dungeonsEntries]);
 
-  const isAllDone = !nextCharacter && isCurrentScheduleComplete;
+  const isAllDone = statistics?.isAllDone ?? false;
 
   return (
     <div className="h-full overflow-y-auto">

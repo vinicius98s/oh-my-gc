@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "../components/Button";
 import ScheduleBuilder, { ScheduleState } from "../components/ScheduleBuilder";
 import { useDataContext } from "../DataContext";
-import { characters } from "../utils/characters";
 import { cn } from "../utils/lib";
 import ohMyGCLogo from "../assets/logo.png";
 
@@ -12,7 +11,7 @@ export default function Onboarding() {
   const [selectedCharacters, setSelectedCharacters] = useState<number[]>([]);
   const [step, setStep] = useState(1);
 
-  const { url } = useDataContext();
+  const { url, characters } = useDataContext();
   const queryClient = useQueryClient();
 
   const isSelected = (characterId: number) => {

@@ -2,6 +2,52 @@ import json
 import datetime
 
 
+def get_current_day_name(cursor):
+    now_query = "SELECT strftime('%w', datetime(date('now', '-6 hours')))"
+    current_day_index = int(cursor.execute(now_query).fetchone()[0])
+    days_map = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    return days_map[current_day_index]
+
+
+def check_all_tasks_done(cursor):
+    current_day_name = get_current_day_name(cursor)
+    
+    # Get all tracked characters
+    tracked_chars = cursor.execute("SELECT id FROM characters WHERE tracking = 1").fetchall()
+    tracked_ids = [c[0] for c in tracked_chars]
+    
+    all_done = True
+    for char_id_check in tracked_ids:
+        schedule_query = """
+            SELECT dungeon_id FROM character_schedules 
+            WHERE character_id = ? AND day = ?
+        """
+        schedule_rows = cursor.execute(schedule_query, (char_id_check, current_day_name)).fetchall()
+        sch_dungeons = [row[0] for row in schedule_rows]
+        
+        for d_id in sch_dungeons:
+            dungeon_meta_query = "SELECT entry_limit, entry_period, reset_day FROM dungeons WHERE id = ?"
+            dungeon_meta = cursor.execute(dungeon_meta_query, (d_id,)).fetchone()
+            if not dungeon_meta: continue
+            limit, period, r_day = dungeon_meta
+            
+            c, _ = get_dungeon_stats(cursor, d_id, char_id_check, period, r_day)
+            
+            completed = False
+            if limit and limit > 0:
+                if c >= limit: completed = True
+            else:
+                if c >= 1: completed = True
+                
+            if not completed:
+                all_done = False
+                break
+        if not all_done:
+            break
+            
+    return all_done
+
+
 def get_date_filter_sql(entry_period, reset_day):
     # Shift time by -6 hours to determing "logic day" (for 06:00 UTC reset)
     # Then start period at +6 hours (06:00 UTC)
@@ -32,11 +78,11 @@ def get_dungeon_stats(cursor, dungeon_id, character_id, entry_period, reset_day)
     avg_time_query = """
         SELECT AVG((julianday(finished_at) - julianday(started_at)) * 86400)
         FROM dungeons_entries
-        WHERE dungeon_id = ?
+        WHERE dungeon_id = ? AND character_id = ?
         AND finished_at IS NOT NULL
         AND finished_at != started_at
     """
-    avg_time = cursor.execute(avg_time_query, (dungeon_id,)).fetchone()[0]
+    avg_time = cursor.execute(avg_time_query, (dungeon_id, character_id)).fetchone()[0]
     
     return count, avg_time
 
@@ -120,6 +166,27 @@ def get_dungeons_entries(DB, character_id):
         print(f"Error in get_dungeons_entries: {e}")
         return None
 
+
+
+def get_characters(DB):
+    try:
+        cursor = DB.cursor()
+        query = "SELECT id, name, display_name, color_theme FROM characters"
+        rows = cursor.execute(query).fetchall()
+
+        response = []
+        for row in rows:
+            response.append({
+                "id": row[0],
+                "name": row[1],
+                "displayName": row[2],
+                "colorTheme": json.loads(row[3]) if row[3] else None
+            })
+
+        return json.dumps({"data": response})
+    except Exception as e:
+        print(f"Error in get_characters: {e}")
+        return None
 
 
 def get_tracked_characters(DB):
@@ -314,78 +381,127 @@ def get_statistics(DB):
                 "totalTimeSpent": total_time_spent,
                 "mostPlayedDungeon": most_played_dungeon,
                 "mostPlayedCharacter": most_played_character,
-                "avgClearTime": avg_clear_time
+                "avgClearTime": avg_clear_time,
+                "isAllDone": check_all_tasks_done(cursor)
             }
         })
     except Exception as e:
         print(f"Error getting statistics: {e}")
         return None
 
-def get_recommendation(DB, current_character_id, current_dungeon_id):
+def get_recommendation(DB, character_id, dungeon_id):
     try:
         cursor = DB.cursor()
- 
-        if current_character_id is not None:
-            current_character_id = int(current_character_id)
         
-        now_shifted = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=6)
-        today = now_shifted.strftime("%A")
- 
-        characters = cursor.execute("SELECT id, name FROM characters WHERE tracking = 1 AND id != ?", (current_character_id,)).fetchall()
+        # 1. Determine current logic day (0=Sunday to 6=Saturday, consistent with SQLite %w)
+        # Shift -6 hours to account for reset time
+        # We need to match how `day` is stored in character_schedules.
+        # Assuming `day` matches SQLite strftime('%w', ...): 0=Sunday, 1=Monday...
         
-        dungeons_rows = cursor.execute("SELECT id, entry_limit, entry_period, reset_day FROM dungeons").fetchall()
-        dungeons_map = {row[0]: {"limit": row[1], "period": row[2], "reset_day": row[3]} for row in dungeons_rows}
-
-        if current_dungeon_id is not None:
-            current_dungeon_id = int(current_dungeon_id)
+        current_day_name = get_current_day_name(cursor)
+        
+        # 2. Get all tracked characters ordered by ID
+        tracked_chars_query = "SELECT id, name FROM characters WHERE tracking = 1 ORDER BY id"
+        tracked_chars = cursor.execute(tracked_chars_query).fetchall()
+        
+        if not tracked_chars:
+            return json.dumps({"data": None})
             
-            for char_id, char_name in characters:
-                schedule = cursor.execute(
-                    "SELECT dungeon_id FROM character_schedules WHERE character_id = ? AND day = ?",
-                    (char_id, today)
-                ).fetchall()
+        tracked_ids = [c[0] for c in tracked_chars]
+        tracked_map = {c[0]: c[1] for c in tracked_chars}
+        
+        # Determine starting index
+        start_index = 0
+        if character_id is not None and int(character_id) in tracked_ids:
+            start_index = (tracked_ids.index(int(character_id)) + 1) % len(tracked_ids)
+
+        def find_candidate(check_dungeon_id=None):
+            # Iterate through characters cyclically
+            for i in range(len(tracked_ids)):
+                curr_idx = (start_index + i) % len(tracked_ids)
+                curr_char_id = tracked_ids[curr_idx]
                 
-                if not schedule:
+                # STRICTLY exclude the current character
+                if character_id is not None and curr_char_id == int(character_id):
+                    continue
+                
+                # Get schedule for this character for today
+                schedule_query = """
+                    SELECT dungeon_id FROM character_schedules 
+                    WHERE character_id = ? AND day = ?
+                """
+                schedule_rows = cursor.execute(schedule_query, (curr_char_id, current_day_name)).fetchall()
+                scheduled_dungeon_ids = [row[0] for row in schedule_rows]
+                
+                if not scheduled_dungeon_ids:
                     continue
                     
-                dungeon_ids = [row[0] for row in schedule]
-                
-                if current_dungeon_id not in dungeon_ids:
-                    continue
-                
-                d_info = dungeons_map.get(current_dungeon_id)
-                if not d_info or d_info["limit"] is None:
-                    continue
-                
-                date_filter = get_date_filter_sql(d_info["period"], d_info["reset_day"])
-                count = cursor.execute(f"SELECT COUNT(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND finished_at IS NOT NULL {date_filter}", (current_dungeon_id, char_id)).fetchone()[0]
-                
-                if count < d_info["limit"]:
-                    return json.dumps({"data": {"id": char_id, "name": char_name}})
+                target_dungeons = []
+                # If we are checking for a specific dungeon
+                if check_dungeon_id is not None:
+                     d_id_int = int(check_dungeon_id)
+                     if d_id_int in scheduled_dungeon_ids:
+                         target_dungeons = [d_id_int]
+                     else:
+                         continue
+                else:
+                    target_dungeons = scheduled_dungeon_ids
+                    
+                # Check completion for each target dungeon
+                for d_id in target_dungeons:
+                    dungeon_meta_query = "SELECT entry_limit, entry_period, reset_day FROM dungeons WHERE id = ?"
+                    dungeon_meta = cursor.execute(dungeon_meta_query, (d_id,)).fetchone()
+                    
+                    if not dungeon_meta:
+                        continue
+                        
+                    entry_limit, entry_period, reset_day = dungeon_meta
+                    
+                    count, _ = get_dungeon_stats(cursor, d_id, curr_char_id, entry_period, reset_day)
+                    
+                    is_completed = False
+                    if entry_limit and entry_limit > 0:
+                        if count >= entry_limit:
+                            is_completed = True
+                    else:
+                        if count >= 1:
+                            is_completed = True
+                            
+                    if not is_completed:
+                        return {
+                            "id": curr_char_id,
+                            "name": tracked_map[curr_char_id]
+                        }
+            return None
 
-        for char_id, char_name in characters:
-            schedule = cursor.execute(
-                "SELECT dungeon_id FROM character_schedules WHERE character_id = ? AND day = ?",
-                (char_id, today)
-            ).fetchall()
+        # Pass 1: Try to find someone for the specific dungeon (if provided)
+        recommendation = None
+        if dungeon_id is not None:
+            recommendation = find_candidate(check_dungeon_id=dungeon_id)
             
-            if not schedule:
-                continue
-                
-            dungeon_ids = [row[0] for row in schedule]
+        # Pass 2: If no recommendation yet (or no dungeon_id provided), find ANY next character
+        if recommendation is None:
+            recommendation = find_candidate(check_dungeon_id=None)
             
-            for d_id in dungeon_ids:
-                d_info = dungeons_map.get(d_id)
-                if not d_info or d_info["limit"] is None:
-                    continue
-                
-                date_filter = get_date_filter_sql(d_info["period"], d_info["reset_day"])
-                count = cursor.execute(f"SELECT COUNT(id) FROM dungeons_entries WHERE dungeon_id = ? AND character_id = ? AND finished_at IS NOT NULL {date_filter}", (d_id, char_id)).fetchone()[0]
-                
-                if count < d_info["limit"]:
-                    return json.dumps({"data": {"id": char_id, "name": char_name}})
- 
-        return json.dumps({"data": None})
+        if recommendation:
+            return json.dumps({
+                "data": {
+                    "recommendation": recommendation,
+                    "isAllDone": False
+                }
+            })
+
+        # If we reached here, no suitable character was found for the request.
+        # Check if ALL schedules are done globally (isAllDone = True)
+        all_done = check_all_tasks_done(cursor)
+        
+        return json.dumps({
+            "data": {
+                "recommendation": None,
+                "isAllDone": all_done
+            }
+        })
+        
     except Exception as e:
         print(f"Error in get_recommendation: {e}")
-        return None
+        return json.dumps({"data": {"recommendation": None, "isAllDone": False}})

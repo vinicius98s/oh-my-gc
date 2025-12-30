@@ -39,7 +39,7 @@ const config: ForgeConfig = {
         name: "oh-my-gc",
       },
       prerelease: false,
-      draft: true,
+      draft: false,
     }),
   ],
   plugins: [
