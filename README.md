@@ -68,9 +68,10 @@ Other resolutions haven't been tested.
 <details>
 <summary>What else do you plan to add?</summary>
 Currently, I have plans to add:
-- An overlay, for those who have one monitor
-- An equipment progress tracker
-- Rewards tracker
+
+- A game overlay
+- An equipment progress helper
+- A rewards tracker
 </details>
 
 ## Screenshots
