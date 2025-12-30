@@ -5,10 +5,32 @@ if (require("electron-squirrel-startup")) {
 import { app, BrowserWindow, ipcMain } from "electron";
 import net from "net";
 import path from "path";
-import { updateElectronApp } from "update-electron-app";
-import { BackendManager } from "./BackendManager";
+import { autoUpdater } from "electron-updater";
 
-updateElectronApp();
+import { BackendManager } from "./BackendManager";
+import { cleanUpOldVersions } from "./utils/cleanup";
+
+if (app.isPackaged) {
+  autoUpdater.autoDownload = false;
+
+  autoUpdater.on("update-available", (info) => {
+    mainWindow?.webContents.send("update-available", info.version);
+  });
+
+  autoUpdater.on("update-downloaded", () => {
+    mainWindow?.webContents.send("update-downloaded");
+  });
+
+  autoUpdater.checkForUpdatesAndNotify();
+}
+
+ipcMain.on("download-update", () => {
+  autoUpdater.downloadUpdate();
+});
+
+ipcMain.on("install-update", () => {
+  autoUpdater.quitAndInstall();
+});
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -74,11 +96,14 @@ const createWindow = async () => {
           "Content-Security-Policy": ["connect-src 'self' http://localhost:*;"],
         },
       });
-    },
+    }
   );
 };
 
-app.on("ready", createWindow);
+app.on("ready", async () => {
+  await cleanUpOldVersions();
+  createWindow();
+});
 
 app.on("before-quit", async (event) => {
   if (isQuitting) {

@@ -31,6 +31,15 @@ type DataContextType = {
   setRecommendation: (rec: RecommendationResponse | null) => void;
   url: string;
   statistics?: StatisticsData;
+  updateStatus: "idle" | "available" | "downloading" | "downloaded";
+  setUpdateStatus: (
+    status: "idle" | "available" | "downloading" | "downloaded"
+  ) => void;
+  newVersion: string;
+  isUpdateModalOpen: boolean;
+  setIsUpdateModalOpen: (open: boolean) => void;
+  isUpdateBannerVisible: boolean;
+  setIsUpdateBannerVisible: (visible: boolean) => void;
 };
 
 const DataContext = createContext<DataContextType>({
@@ -44,6 +53,13 @@ const DataContext = createContext<DataContextType>({
   setRecommendation: () => {},
   url: "",
   statistics: undefined,
+  updateStatus: "idle",
+  setUpdateStatus: () => {},
+  newVersion: "",
+  isUpdateModalOpen: false,
+  setIsUpdateModalOpen: () => {},
+  isUpdateBannerVisible: false,
+  setIsUpdateBannerVisible: () => {},
 });
 
 export function useDataContext() {
@@ -67,6 +83,13 @@ export function DataContextProvider({
   >(null);
   const [recommendation, setRecommendation] =
     useState<RecommendationResponse | null>(null);
+
+  const [updateStatus, setUpdateStatus] = useState<
+    "idle" | "available" | "downloading" | "downloaded"
+  >("idle");
+  const [newVersion, setNewVersion] = useState("");
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isUpdateBannerVisible, setIsUpdateBannerVisible] = useState(false);
 
   const url = `http://localhost:${port}`;
 
@@ -127,6 +150,19 @@ export function DataContextProvider({
 
   useEffect(() => {
     window.api.getPort().then(setPort);
+
+    window.electron.onUpdateAvailable((version) => {
+      setNewVersion(version);
+      setUpdateStatus("available");
+      setIsUpdateModalOpen(true);
+      setIsUpdateBannerVisible(false);
+    });
+
+    window.electron.onUpdateDownloaded(() => {
+      setUpdateStatus("downloaded");
+      setIsUpdateModalOpen(true);
+      setIsUpdateBannerVisible(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -182,6 +218,13 @@ export function DataContextProvider({
         statistics,
         recommendedCharacter: recommendation,
         setRecommendation,
+        updateStatus,
+        setUpdateStatus,
+        newVersion,
+        isUpdateModalOpen,
+        setIsUpdateModalOpen,
+        isUpdateBannerVisible,
+        setIsUpdateBannerVisible,
       }}
     >
       {children}
