@@ -4,6 +4,7 @@ import { useDataContext } from "./DataContext";
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
 import Statistics from "./pages/Statistics";
+import Settings from "./pages/Settings";
 import NavBar, { Page } from "./components/NavBar";
 import UpdateModal from "./components/UpdateModal";
 import UpdateBanner from "./components/UpdateBanner";
@@ -24,6 +25,7 @@ export default function App() {
       <div className="flex-1 min-h-0">
         {currentPage === "home" && <Home />}
         {currentPage === "statistics" && <Statistics />}
+        {currentPage === "settings" && <Settings />}
       </div>
       <UpdateModal />
     </div>

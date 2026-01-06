@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDataContext } from "../DataContext";
 import Button from "../components/Button";
 import ScheduleBuilder, { ScheduleState } from "../components/ScheduleBuilder";
-import { getCharacterById } from "../utils/characters";
+import { getNextCharacter } from "../utils/schedule";
 
 import DungeonsList from "../components/DungeonsList";
 import GameStatus from "../components/GameStatus";
@@ -101,10 +101,10 @@ export default function Home() {
     return todayDungeons.every(isDungeonComplete);
   }, [playingCharacter, todayDungeons]);
 
-  const nextCharacter = useMemo(() => {
-    if (!recommendedCharacter?.recommendation) return;
-    return getCharacterById(recommendedCharacter.recommendation.id, characters);
-  }, [recommendedCharacter, characters]);
+  const nextCharacter = useMemo(
+    () => getNextCharacter(recommendedCharacter, characters),
+    [recommendedCharacter, characters]
+  );
 
   const characterETC = useMemo(
     () => calculateDungeonsETC(todayDungeons),

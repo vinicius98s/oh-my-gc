@@ -1,5 +1,6 @@
 import { Character } from "../utils/characters";
 import { Dungeon } from "../utils/dungeons";
+import RecommendedNext from "./RecommendedNext";
 
 type GameStatusProps = {
   character?: Character;
@@ -100,32 +101,10 @@ export default function GameStatus({
                 </h2>
               </div>
 
-              {nextCharacter ? (
-                <div className="text-right">
-                  <p className="text-[10px] mb-1 text-blue-300 uppercase tracking-wider">
-                    Recommended Next
-                  </p>
-                  <div className="flex items-center justify-end gap-3">
-                    <span className="text-lg font-bold text-white drop-shadow-lg">
-                      {nextCharacter.displayName}
-                    </span>
-                    <img
-                      src={nextCharacter.image}
-                      alt={nextCharacter.displayName}
-                      className="h-8 w-8 rounded-full object-cover ring-2 ring-blue/40"
-                    />
-                  </div>
-                </div>
-              ) : isAllDone ? (
-                <div className="text-right">
-                  <p className="text-[10px] mb-1 text-gray-400 uppercase tracking-wider">
-                    Daily Schedule
-                  </p>
-                  <span className="text-lg text-white font-bold drop-shadow-lg flex items-center justify-end gap-2">
-                    All Done <span className="text-green-400">✓</span>
-                  </span>
-                </div>
-              ) : null}
+              <RecommendedNext
+                nextCharacter={nextCharacter}
+                isAllDone={isAllDone}
+              />
             </div>
 
             {dungeon ? (

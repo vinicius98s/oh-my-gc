@@ -5,13 +5,71 @@ type TodayScheduleCardProps = {
   dungeon: Dungeon;
   isComplete: boolean;
   progressText: string;
+  variant?: "default" | "mini";
 };
 
 export default function TodayScheduleCard({
   dungeon,
   isComplete,
   progressText,
+  variant = "default",
 }: TodayScheduleCardProps) {
+  if (variant === "mini") {
+    return (
+      <div
+        className={cn(
+          "flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all duration-200 min-w-[80px]",
+          isComplete
+            ? "bg-white/5 opacity-50 border-white/5"
+            : "bg-white/10 border-white/10 hover:bg-white/15"
+        )}
+        style={{
+          borderColor: isComplete ? undefined : `${dungeon.accentColor}33`,
+        }}
+      >
+        <div className="relative flex-shrink-0">
+          <img
+            src={dungeon.image}
+            alt={dungeon.displayName}
+            className={cn(
+              "w-10 h-10 rounded shadow-sm",
+              isComplete ? "grayscale scale-90" : ""
+            )}
+          />
+          {isComplete && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded backdrop-blur-[0.5px]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4 text-white"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col items-center w-full min-w-0 text-center">
+          <p
+            className={cn(
+              "text-[10px] font-bold truncate w-full leading-tight",
+              isComplete ? "text-gray-500 line-through" : "text-gray-100"
+            )}
+          >
+            {dungeon.displayName}
+          </p>
+          <p className="text-[9px] text-light-blue font-bold">
+            {formatDungeonAverageTime(dungeon.avgTime)}
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       className={cn(

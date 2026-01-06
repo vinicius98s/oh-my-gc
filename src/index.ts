@@ -2,9 +2,18 @@ if (require("electron-squirrel-startup")) {
   process.exit();
 }
 
-import { app, BrowserWindow, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Tray,
+  Menu,
+  nativeImage,
+  screen,
+} from "electron";
 import net from "net";
 import path from "path";
+import fs from "fs";
 import { autoUpdater } from "electron-updater";
 
 import { BackendManager } from "./BackendManager";
@@ -52,7 +61,71 @@ function getRandomOpenPort(): number {
 
 const backendManager = new BackendManager();
 let mainWindow: BrowserWindow | undefined;
+let tray: Tray | undefined;
 let isQuitting = false;
+
+const SETTINGS_PATH = path.join(app.getPath("userData"), "settings.json");
+
+function getSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_PATH)) {
+      return JSON.parse(fs.readFileSync(SETTINGS_PATH, "utf-8"));
+    }
+  } catch (e) {
+    console.error("Failed to read settings", e);
+  }
+  return {
+    quitOnClose: false,
+    showOverlay: true,
+    overlayX: null as number | null,
+    overlayY: null as number | null,
+  };
+}
+
+function saveSettings(settings: {
+  quitOnClose: boolean;
+  showOverlay: boolean;
+  overlayX: number | null;
+  overlayY: number | null;
+}) {
+  try {
+    fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings));
+  } catch (e) {
+    console.error("Failed to save settings", e);
+  }
+}
+
+let settings = getSettings();
+
+const createTray = () => {
+  const iconPath = path.join(__dirname, "../../src/assets/icon.ico");
+  const icon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(icon);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Show",
+      click: () => {
+        mainWindow?.show();
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Quit",
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      },
+    },
+  ]);
+
+  tray.setToolTip("Oh My GC");
+  tray.setContextMenu(contextMenu);
+
+  tray.on("click", () => {
+    mainWindow?.isVisible() ? mainWindow.hide() : mainWindow?.show();
+  });
+};
 
 const createWindow = async () => {
   if (isQuitting) {
@@ -80,13 +153,82 @@ const createWindow = async () => {
 
   ipcMain.handle("get-port", () => port);
 
+  ipcMain.handle("get-startup-setting", () => {
+    return app.getLoginItemSettings().openAtLogin;
+  });
+
+  ipcMain.on("set-startup-setting", (_, openAtLogin: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin,
+      path: app.getPath("exe"),
+      args: ["--hidden"],
+    });
+  });
+
+  ipcMain.handle("get-quit-on-close", () => {
+    return settings.quitOnClose;
+  });
+
+  ipcMain.on("set-quit-on-close", (_, quitOnClose: boolean) => {
+    settings.quitOnClose = quitOnClose;
+    saveSettings(settings);
+  });
+
+  ipcMain.handle("get-show-overlay", () => {
+    return settings.showOverlay;
+  });
+
+  ipcMain.on("set-ignore-mouse-events", (event, ignore, options) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      win.setIgnoreMouseEvents(ignore, options);
+    }
+  });
+
+  ipcMain.on("resize-overlay", (event, height) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && win === overlayWindow) {
+      const [width] = win.getContentSize();
+      win.setContentSize(width, Math.round(height));
+    }
+  });
+
+  ipcMain.on("set-show-overlay", (_, showOverlay: boolean) => {
+    settings.showOverlay = showOverlay;
+    saveSettings(settings);
+    if (showOverlay) {
+      createOverlayWindow();
+    } else {
+      overlayWindow?.close();
+      overlayWindow = undefined;
+    }
+  });
+
   ipcMain.on("minimize-window", () => {
     mainWindow?.minimize();
   });
 
   ipcMain.on("close-window", () => {
-    mainWindow?.close();
+    if (settings.quitOnClose) {
+      isQuitting = true;
+      app.quit();
+    } else {
+      mainWindow?.hide();
+    }
   });
+
+  mainWindow.on("close", (event) => {
+    if (!isQuitting && !settings.quitOnClose) {
+      event.preventDefault();
+      mainWindow?.hide();
+    }
+  });
+
+  if (process.argv.includes("--hidden")) {
+    mainWindow.hide();
+  } else {
+    mainWindow.show();
+  }
 
   mainWindow.webContents.session.webRequest.onHeadersReceived(
     (details, callback) => {
@@ -102,7 +244,11 @@ const createWindow = async () => {
 
 app.on("ready", async () => {
   await cleanUpOldVersions();
+  createTray();
   createWindow();
+  if (settings.showOverlay) {
+    createOverlayWindow();
+  }
 });
 
 app.on("before-quit", async (event) => {
@@ -127,5 +273,61 @@ app.on("window-all-closed", () => {
 app.on("activate", async () => {
   if (!isQuitting && !mainWindow) {
     await createWindow();
+    if (settings.showOverlay && !overlayWindow) {
+      createOverlayWindow();
+    }
   }
 });
+
+let overlayWindow: BrowserWindow | undefined;
+
+const createOverlayWindow = () => {
+  if (overlayWindow) return;
+
+  const { width: screenWidth } = screen.getPrimaryDisplay().workAreaSize;
+  const overlayWidth = 320;
+  const overlayHeight = 110; // Renderer will correct this
+  const defaultX = screenWidth - overlayWidth - 10;
+  const defaultY = 200;
+
+  overlayWindow = new BrowserWindow({
+    width: overlayWidth,
+    height: overlayHeight,
+    x: settings.overlayX ?? defaultX,
+    y: settings.overlayY ?? defaultY,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: false,
+    hasShadow: false,
+    movable: true,
+    focusable: false,
+    skipTaskbar: true,
+    backgroundColor: "#00000000",
+    type: "panel",
+    webPreferences: {
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      backgroundThrottling: false,
+    },
+  });
+
+  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  overlayWindow.setAlwaysOnTop(true, "floating");
+  overlayWindow.setIgnoreMouseEvents(false);
+  overlayWindow.setFullScreenable(false);
+
+  overlayWindow.on("move", () => {
+    if (overlayWindow) {
+      const [x, y] = overlayWindow.getPosition();
+      settings.overlayX = x;
+      settings.overlayY = y;
+      saveSettings(settings);
+    }
+  });
+
+  overlayWindow.loadURL(`${MAIN_WINDOW_WEBPACK_ENTRY}?overlay=true`);
+
+  overlayWindow.on("closed", () => {
+    overlayWindow = undefined;
+  });
+};

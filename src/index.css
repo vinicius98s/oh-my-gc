@@ -79,6 +79,26 @@ body {
   @apply bg-gray;
 }
 
+html.overlay,
+html.overlay body,
+html.overlay #root {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+.drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
 ::-webkit-scrollbar {
   @apply w-1.5 h-1.5;
 }
