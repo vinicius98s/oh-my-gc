@@ -5,6 +5,8 @@ import {
   useLayoutEffect,
   useRef,
 } from "react";
+import { X } from "lucide-react";
+
 import { useDataContext } from "../DataContext";
 import {
   calculateDungeonsETC,
@@ -148,9 +150,15 @@ export default function Overlay() {
         <div
           ref={containerRef}
           style={{ WebkitAppRegion: "drag" } as CSSProperties}
-          className="h-fit w-full bg-gray/90 backdrop-blur-md border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-white relative select-none overflow-hidden"
+          className="h-fit w-full bg-gray/80 backdrop-blur-sm border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-white relative select-none overflow-hidden group"
         >
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => (window as any).electron.toggleOverlay()}
+            className="absolute top-1 right-1 p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all no-drag z-50 opacity-100"
+          >
+            <X size={10} />
+          </button>
+          <div className="flex items-center gap-3 pr-2">
             <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-lg shadow-inner border border-white/5 flex-shrink-0">
               <span>🎮</span>
             </div>
@@ -184,8 +192,14 @@ export default function Overlay() {
       <div
         ref={containerRef}
         style={{ WebkitAppRegion: "drag" } as CSSProperties}
-        className="h-fit w-full bg-gray/90 backdrop-blur-md border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-white relative overflow-hidden select-none"
+        className="h-fit w-full bg-gray/80 backdrop-blur-sm border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-white relative overflow-hidden select-none group"
       >
+        <button
+          onClick={() => (window as any).electron.toggleOverlay()}
+          className="absolute top-1 right-1 p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all no-drag z-50 opacity-100"
+        >
+          <X size={10} />
+        </button>
         {/* Background Glow */}
         <div
           className="absolute inset-0 opacity-20 blur-2xl -z-10 group-hover:opacity-30 transition-opacity duration-500"
@@ -230,11 +244,13 @@ export default function Overlay() {
             )}
           </div>
 
-          <RecommendedNext
-            nextCharacter={nextCharacter}
-            isAllDone={recommendedCharacter?.isAllDone}
-            variant="compact"
-          />
+          <div className="pr-2">
+            <RecommendedNext
+              nextCharacter={nextCharacter}
+              isAllDone={recommendedCharacter?.isAllDone}
+              variant="compact"
+            />
+          </div>
         </div>
 
         <div className="h-[1px] bg-white/10 relative z-10" />

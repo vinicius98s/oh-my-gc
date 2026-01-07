@@ -23,6 +23,16 @@ export default function Settings() {
     };
 
     fetchSettings();
+
+    const cleanup = window.electron.onOverlaySettingChanged(
+      (value: boolean) => {
+        setShowOverlay(value);
+      }
+    );
+
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, []);
 
   const handleToggleStartup = async () => {

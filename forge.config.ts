@@ -20,6 +20,7 @@ const config: ForgeConfig = {
       "./backend/third-party",
       "./backend/templates",
       "./backend/migrations",
+      "./src/assets/icon.ico",
     ],
     icon: "./src/assets/icon.ico",
   },

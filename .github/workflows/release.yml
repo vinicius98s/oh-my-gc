@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "package.json"
 
 jobs:
   release:
@@ -14,40 +16,63 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check_version
+        shell: pwsh
+        run: |
+          $prev_version = git show HEAD~1:package.json | ConvertFrom-Json | Select-Object -ExpandProperty version
+          $curr_version = Get-Content package.json | ConvertFrom-Json | Select-Object -ExpandProperty version
+          if ($prev_version -ne $curr_version) {
+            Write-Host "Version changed from $prev_version to $curr_version"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          } else {
+            Write-Host "Version unchanged ($curr_version)"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          }
 
       - name: Setup Node.js
+        if: steps.check_version.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: "npm"
 
       - name: Setup Python
+        if: steps.check_version.outputs.changed == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
           cache: "pip"
 
       - name: Install Python dependencies
+        if: steps.check_version.outputs.changed == 'true'
         run: |
           cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Install Tesseract (for bundling)
+        if: steps.check_version.outputs.changed == 'true'
         run: |
           choco install tesseract --no-progress
           robocopy "C:/Program Files/Tesseract-OCR" "backend/third-party/tesseract-win64" /E /NFL /NDL /NJH /NJS /nc /ns /np
           if ($LastExitCode -le 3) { $global:LastExitCode = 0 }
 
       - name: Build Backend Executable
+        if: steps.check_version.outputs.changed == 'true'
         run: |
           cd backend
           pyinstaller main.spec
 
       - name: Install Node.js dependencies
+        if: steps.check_version.outputs.changed == 'true'
         run: npm install
 
       - name: Publish Release
+        if: steps.check_version.outputs.changed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run publish

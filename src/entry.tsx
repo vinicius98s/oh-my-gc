@@ -18,18 +18,20 @@ const root = createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <DataContextProvider>
-        {isOverlay ? (
+      {isOverlay ? (
+        <DataContextProvider>
           <Overlay />
-        ) : (
-          <div className="flex flex-col h-screen">
-            <TitleBar />
-            <div className="flex flex-col flex-1 min-h-0">
+        </DataContextProvider>
+      ) : (
+        <div className="flex flex-col h-screen">
+          <TitleBar />
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <DataContextProvider>
               <App />
-            </div>
+            </DataContextProvider>
           </div>
-        )}
-      </DataContextProvider>
+        </div>
+      )}
     </QueryClientProvider>
   </React.StrictMode>
 );

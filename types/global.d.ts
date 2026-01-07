@@ -18,6 +18,7 @@ declare global {
       getShowOverlay: () => Promise<boolean>;
       setQuitOnClose: (quitOnClose: boolean) => void;
       setShowOverlay: (showOverlay: boolean) => void;
+      toggleOverlay: () => void;
       setStartupSetting: (startup: boolean) => void;
       minimizeWindow: () => void;
       maximizeWindow: () => void;
@@ -26,6 +27,9 @@ declare global {
       onUpdateDownloaded: (callback: () => void) => void;
       downloadUpdate: () => void;
       installUpdate: () => void;
+      onOverlaySettingChanged: (
+        callback: (value: boolean) => void
+      ) => () => void;
     };
   }
 }

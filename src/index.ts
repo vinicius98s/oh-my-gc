@@ -97,16 +97,34 @@ function saveSettings(settings: {
 
 let settings = getSettings();
 
+const getIconPath = () => {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "icon.ico");
+  }
+  return path.join(__dirname, "../../src/assets/icon.ico");
+};
+
 const createTray = () => {
-  const iconPath = path.join(__dirname, "../../src/assets/icon.ico");
+  const iconPath = getIconPath();
   const icon = nativeImage.createFromPath(iconPath);
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Show",
+      label: "Show App",
       click: () => {
         mainWindow?.show();
+      },
+    },
+    {
+      label: "Toggle Overlay",
+      click: () => {
+        if (overlayWindow) {
+          overlayWindow.close();
+          overlayWindow = undefined;
+        } else {
+          createOverlayWindow();
+        }
       },
     },
     { type: "separator" },
@@ -145,7 +163,7 @@ const createWindow = async () => {
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
-    icon: path.join(__dirname, "../../src/assets/icon.ico"),
+    icon: getIconPath(),
   });
 
   mainWindow.setResizable(false);
@@ -201,6 +219,16 @@ const createWindow = async () => {
     } else {
       overlayWindow?.close();
       overlayWindow = undefined;
+    }
+    mainWindow?.webContents.send("overlay-setting-changed", showOverlay);
+  });
+
+  ipcMain.on("toggle-overlay", () => {
+    if (overlayWindow) {
+      overlayWindow.close();
+      overlayWindow = undefined;
+    } else {
+      createOverlayWindow();
     }
   });
 
@@ -307,7 +335,6 @@ const createOverlayWindow = () => {
     type: "panel",
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      backgroundThrottling: false,
     },
   });
 

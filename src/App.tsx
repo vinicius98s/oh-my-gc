@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useDataContext } from "./DataContext";
 
+import { useDataContext } from "./DataContext";
 import Onboarding from "./pages/Onboarding";
 import Home from "./pages/Home";
 import Statistics from "./pages/Statistics";

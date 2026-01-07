@@ -29,4 +29,12 @@ contextBridge.exposeInMainWorld("electron", {
   getShowOverlay: () => ipcRenderer.invoke("get-show-overlay"),
   setShowOverlay: (value: boolean) =>
     ipcRenderer.send("set-show-overlay", value),
+  toggleOverlay: () => ipcRenderer.send("toggle-overlay"),
+  onOverlaySettingChanged: (callback: (value: boolean) => void) => {
+    const subscription = (_event: any, value: boolean) => callback(value);
+    ipcRenderer.on("overlay-setting-changed", subscription);
+    return () => {
+      ipcRenderer.removeListener("overlay-setting-changed", subscription);
+    };
+  },
 });
