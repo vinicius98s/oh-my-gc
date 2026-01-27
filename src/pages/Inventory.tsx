@@ -48,19 +48,19 @@ export default function Inventory() {
         if (b.character === null) return 1;
         // Then by name
         return (a.character?.displayName || "").localeCompare(
-          b.character?.displayName || ""
+          b.character?.displayName || "",
         );
       });
   }, [inventory, characters, playingCharacter?.id]);
 
   const playingCharGroup = characterGroups.find(
-    (g) => g.character?.id === playingCharacter?.id
+    (g) => g.character?.id === playingCharacter?.id,
   );
   const warehouseGroup = characterGroups.find((g) => g.character === null);
   const otherGroups = characterGroups.filter(
-    (g) => g.character?.id !== playingCharacter?.id && g.character !== null
+    (g) => g.character?.id !== playingCharacter?.id && g.character !== null,
   );
-  const warehouseIsMain = playingCharGroup.character === null;
+  const warehouseIsMain = playingCharGroup?.character === null;
 
   return (
     <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
