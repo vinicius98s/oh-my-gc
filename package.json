@@ -1,7 +1,7 @@
 {
   "name": "oh-my-gc",
   "productName": "Oh My GC",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Grand Chase Dungeon Tracker and Character Manager",
   "repository": {
     "type": "git",
