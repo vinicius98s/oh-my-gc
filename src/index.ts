@@ -10,11 +10,11 @@ import {
   Menu,
   nativeImage,
   screen,
+  autoUpdater,
 } from "electron";
 import net from "net";
 import path from "path";
 import fs from "fs";
-import { autoUpdater } from "electron-updater";
 
 import { BackendManager } from "./BackendManager";
 import { cleanUpOldVersions } from "./utils/cleanup";
@@ -22,15 +22,22 @@ import { cleanUpOldVersions } from "./utils/cleanup";
 const initUpdater = () => {
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = false;
+  const url = `https://update.electronjs.org/vinicius98s/oh-my-gc/${process.platform}-${process.arch}/${app.getVersion()}`;
+
+  try {
+    autoUpdater.setFeedURL({ url });
+  } catch (err: any) {
+    logToFile(`Failed to set feed URL: ${err.message}`);
+    return;
+  }
 
   autoUpdater.on("checking-for-update", () => {
     logToFile("Checking for updates...");
   });
 
-  autoUpdater.on("update-available", (info) => {
-    logToFile(`Update available: ${info.version}`);
-    mainWindow?.webContents.send("update-available", info.version);
+  autoUpdater.on("update-available", () => {
+    logToFile("Update available, starting download...");
+    mainWindow?.webContents.send("update-available", "new version");
   });
 
   autoUpdater.on("update-not-available", () => {
@@ -43,23 +50,20 @@ const initUpdater = () => {
     mainWindow?.webContents.send("updater-error", err.message);
   });
 
-  autoUpdater.on("download-progress", (progressObj) => {
-    mainWindow?.webContents.send("update-progress", progressObj.percent);
-  });
-
   autoUpdater.on("update-downloaded", () => {
     logToFile("Update downloaded.");
     mainWindow?.webContents.send("update-downloaded");
   });
 
-  autoUpdater.logger = {
-    info: (m) => logToFile(`INFO: ${m}`),
-    warn: (m) => logToFile(`WARN: ${m}`),
-    error: (m) => logToFile(`ERROR: ${m}`),
-    debug: (m) => logToFile(`DEBUG: ${m}`),
-  };
+  // Check every 30 minutes
+  setInterval(
+    () => {
+      autoUpdater.checkForUpdates();
+    },
+    30 * 60 * 1000,
+  );
 
-  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdates();
 };
 
 if (!app.isPackaged) {
@@ -90,7 +94,10 @@ if (!app.isPackaged) {
 }
 
 ipcMain.on("download-update", () => {
-  autoUpdater.downloadUpdate();
+  // Native autoUpdater handles download automatically on Windows/macOS
+  logToFile(
+    "download-update triggered, but native autoUpdater handles it automatically.",
+  );
 });
 
 ipcMain.on("install-update", () => {

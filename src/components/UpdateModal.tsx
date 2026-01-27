@@ -17,9 +17,7 @@ export default function UpdateModal() {
 
   const handleDownload = () => {
     setUpdateStatus("downloading");
-    // Note: The status update will happen in the main process and be sent back via IPC
-    // which eventually updates the DataContext state.
-    window.electron.downloadUpdate();
+    // Native autoUpdater handles download automatically, so we just update the UI state
   };
 
   const handleInstall = () => {
@@ -39,11 +37,7 @@ export default function UpdateModal() {
     <Modal
       isOpen={isUpdateModalOpen}
       onClose={handleClose}
-      title={
-        updateStatus === "downloaded"
-          ? "Update Ready!"
-          : "New Version Available"
-      }
+      title={updateStatus === "downloaded" ? "Update Ready!" : "Update Found"}
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3 rounded-lg bg-blue-500/10 p-4 border border-blue-500/20">
@@ -60,13 +54,15 @@ export default function UpdateModal() {
                 ? "The download is complete."
                 : updateStatus === "error"
                   ? "Update Error"
-                  : `Version ${newVersion} is now available!`}
+                  : updateStatus === "available" ||
+                      updateStatus === "downloading"
+                    ? "A new version is being downloaded..."
+                    : `Version ${newVersion} is now available!`}
             </p>
             <p className="text-sm text-gray-400">
-              {updateStatus === "available" &&
-                "Would you like to download and install it now?"}
-              {updateStatus === "downloading" &&
-                `Downloading the update... ${Math.round(updateProgress)}%`}
+              {(updateStatus === "available" ||
+                updateStatus === "downloading") &&
+                "The application is downloading the latest update in the background."}
               {updateStatus === "downloaded" &&
                 "Restart the app to apply the update and enjoy new features."}
               {updateStatus === "error" &&
@@ -75,43 +71,26 @@ export default function UpdateModal() {
           </div>
         </div>
 
-        {updateStatus === "downloading" && (
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-500/10">
-            <div
-              className="h-full bg-blue-500 transition-all duration-300"
-              style={{ width: `${updateProgress}%` }}
-            />
-          </div>
-        )}
-
         <div className="flex justify-end gap-3 mt-2">
-          {updateStatus === "available" && (
-            <>
-              <Button variant="secondary" onClick={handleClose}>
-                Maybe Later
-              </Button>
-              <Button
-                onClick={handleDownload}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download Now
-              </Button>
-            </>
-          )}
-
-          {updateStatus === "downloading" && (
-            <Button disabled className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Downloading...
+          {(updateStatus === "available" || updateStatus === "downloading") && (
+            <Button variant="secondary" onClick={handleClose}>
+              Dismiss
             </Button>
           )}
 
           {updateStatus === "downloaded" && (
-            <Button onClick={handleInstall} className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Restart & Update
-            </Button>
+            <>
+              <Button variant="secondary" onClick={handleClose}>
+                Later
+              </Button>
+              <Button
+                onClick={handleInstall}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Restart & Update
+              </Button>
+            </>
           )}
 
           {updateStatus === "error" && (
