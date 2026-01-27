@@ -11,6 +11,8 @@ export default function UpdateModal() {
     newVersion,
     setIsUpdateBannerVisible,
     setUpdateStatus,
+    updateProgress,
+    updateError,
   } = useDataContext();
 
   const handleDownload = () => {
@@ -56,18 +58,31 @@ export default function UpdateModal() {
             <p className="font-medium text-white">
               {updateStatus === "downloaded"
                 ? "The download is complete."
-                : `Version ${newVersion} is now available!`}
+                : updateStatus === "error"
+                  ? "Update Error"
+                  : `Version ${newVersion} is now available!`}
             </p>
             <p className="text-sm text-gray-400">
               {updateStatus === "available" &&
                 "Would you like to download and install it now?"}
               {updateStatus === "downloading" &&
-                "Downloading the update... this might take a moment."}
+                `Downloading the update... ${Math.round(updateProgress)}%`}
               {updateStatus === "downloaded" &&
                 "Restart the app to apply the update and enjoy new features."}
+              {updateStatus === "error" &&
+                (updateError || "An error occurred while updating.")}
             </p>
           </div>
         </div>
+
+        {updateStatus === "downloading" && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-blue-500/10">
+            <div
+              className="h-full bg-blue-500 transition-all duration-300"
+              style={{ width: `${updateProgress}%` }}
+            />
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 mt-2">
           {updateStatus === "available" && (
@@ -97,6 +112,10 @@ export default function UpdateModal() {
               <RefreshCw className="h-4 w-4" />
               Restart & Update
             </Button>
+          )}
+
+          {updateStatus === "error" && (
+            <Button onClick={handleClose}>Close</Button>
           )}
         </div>
       </div>

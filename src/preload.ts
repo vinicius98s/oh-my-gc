@@ -16,8 +16,14 @@ contextBridge.exposeInMainWorld("electron", {
   closeWindow: () => ipcRenderer.send("close-window"),
   onUpdateAvailable: (callback: (version: string) => void) =>
     ipcRenderer.on("update-available", (_, version) => callback(version)),
+  onUpdateNotAvailable: (callback: () => void) =>
+    ipcRenderer.on("update-not-available", () => callback()),
   onUpdateDownloaded: (callback: () => void) =>
     ipcRenderer.on("update-downloaded", () => callback()),
+  onUpdateError: (callback: (error: string) => void) =>
+    ipcRenderer.on("updater-error", (_, error) => callback(error)),
+  onUpdateProgress: (callback: (percent: number) => void) =>
+    ipcRenderer.on("update-progress", (_, percent) => callback(percent)),
   downloadUpdate: () => ipcRenderer.send("download-update"),
   installUpdate: () => ipcRenderer.send("install-update"),
   getStartupSetting: () => ipcRenderer.invoke("get-startup-setting"),

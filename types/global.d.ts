@@ -9,7 +9,7 @@ declare global {
     electronAPI?: {
       setIgnoreMouseEvents: (
         ignore: boolean,
-        options?: { forward: boolean }
+        options?: { forward: boolean },
       ) => void;
     };
     electron: {
@@ -24,11 +24,14 @@ declare global {
       maximizeWindow: () => void;
       closeWindow: () => void;
       onUpdateAvailable: (callback: (version: string) => void) => void;
+      onUpdateNotAvailable: (callback: () => void) => void;
       onUpdateDownloaded: (callback: () => void) => void;
+      onUpdateError: (callback: (error: string) => void) => void;
+      onUpdateProgress: (callback: (percent: number) => void) => void;
       downloadUpdate: () => void;
       installUpdate: () => void;
       onOverlaySettingChanged: (
-        callback: (value: boolean) => void
+        callback: (value: boolean) => void,
       ) => () => void;
     };
   }

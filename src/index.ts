@@ -19,18 +19,67 @@ import { autoUpdater } from "electron-updater";
 import { BackendManager } from "./BackendManager";
 import { cleanUpOldVersions } from "./utils/cleanup";
 
-if (app.isPackaged) {
+const initUpdater = () => {
+  if (!app.isPackaged) return;
+
   autoUpdater.autoDownload = false;
 
+  autoUpdater.on("checking-for-update", () => {
+    console.log("Checking for updates...");
+  });
+
   autoUpdater.on("update-available", (info) => {
+    console.log("Update available:", info.version);
     mainWindow?.webContents.send("update-available", info.version);
   });
 
+  autoUpdater.on("update-not-available", () => {
+    console.log("Update not available.");
+    mainWindow?.webContents.send("update-not-available");
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("Updater error:", err);
+    mainWindow?.webContents.send("updater-error", err.message);
+  });
+
+  autoUpdater.on("download-progress", (progressObj) => {
+    mainWindow?.webContents.send("update-progress", progressObj.percent);
+  });
+
   autoUpdater.on("update-downloaded", () => {
+    console.log("Update downloaded.");
     mainWindow?.webContents.send("update-downloaded");
   });
 
   autoUpdater.checkForUpdatesAndNotify();
+};
+
+if (!app.isPackaged) {
+  ipcMain.on("debug-trigger-update", (event, status) => {
+    switch (status) {
+      case "available":
+        mainWindow?.webContents.send("update-available", "1.1.0");
+        break;
+      case "progress":
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          mainWindow?.webContents.send("update-progress", progress);
+          if (progress >= 100) {
+            clearInterval(interval);
+            mainWindow?.webContents.send("update-downloaded");
+          }
+        }, 500);
+        break;
+      case "error":
+        mainWindow?.webContents.send(
+          "updater-error",
+          "Failed to fetch updates",
+        );
+        break;
+    }
+  });
 }
 
 ipcMain.on("download-update", () => {
@@ -266,14 +315,15 @@ const createWindow = async () => {
           "Content-Security-Policy": ["connect-src 'self' http://localhost:*;"],
         },
       });
-    }
+    },
   );
 };
 
 app.on("ready", async () => {
   await cleanUpOldVersions();
   createTray();
-  createWindow();
+  await createWindow();
+  initUpdater();
   if (settings.showOverlay) {
     createOverlayWindow();
   }

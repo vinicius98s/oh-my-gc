@@ -32,10 +32,12 @@ type DataContextType = {
   setRecommendation: (rec: RecommendationResponse | null) => void;
   url: string;
   statistics?: StatisticsData;
-  updateStatus: "idle" | "available" | "downloading" | "downloaded";
+  updateStatus: "idle" | "available" | "downloading" | "downloaded" | "error";
   setUpdateStatus: (
-    status: "idle" | "available" | "downloading" | "downloaded"
+    status: "idle" | "available" | "downloading" | "downloaded" | "error",
   ) => void;
+  updateProgress: number;
+  updateError?: string;
   newVersion: string;
   isUpdateModalOpen: boolean;
   setIsUpdateModalOpen: (open: boolean) => void;
@@ -57,6 +59,7 @@ const DataContext = createContext<DataContextType>({
   statistics: undefined,
   updateStatus: "idle",
   setUpdateStatus: () => {},
+  updateProgress: 0,
   newVersion: "",
   isUpdateModalOpen: false,
   setIsUpdateModalOpen: () => {},
@@ -88,9 +91,11 @@ export function DataContextProvider({
     useState<RecommendationResponse | null>(null);
 
   const [updateStatus, setUpdateStatus] = useState<
-    "idle" | "available" | "downloading" | "downloaded"
+    "idle" | "available" | "downloading" | "downloaded" | "error"
   >("idle");
   const [newVersion, setNewVersion] = useState("");
+  const [updateProgress, setUpdateProgress] = useState(0);
+  const [updateError, setUpdateError] = useState<string>();
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isUpdateBannerVisible, setIsUpdateBannerVisible] = useState(false);
 
@@ -135,7 +140,7 @@ export function DataContextProvider({
       getNextCharacterRecommendation(
         url,
         playingCharacter?.id || null,
-        playingDungeonId || null
+        playingDungeonId || null,
       ),
     enabled: !!port && playingDungeonId !== null,
     staleTime: Infinity,
@@ -167,10 +172,23 @@ export function DataContextProvider({
       setIsUpdateBannerVisible(false);
     });
 
+    window.electron.onUpdateNotAvailable(() => {
+      setUpdateStatus("idle");
+    });
+
     window.electron.onUpdateDownloaded(() => {
       setUpdateStatus("downloaded");
       setIsUpdateModalOpen(true);
       setIsUpdateBannerVisible(false);
+    });
+
+    window.electron.onUpdateError((error) => {
+      setUpdateError(error);
+      setUpdateStatus("error");
+    });
+
+    window.electron.onUpdateProgress((percent) => {
+      setUpdateProgress(percent);
     });
   }, []);
 
@@ -231,6 +249,8 @@ export function DataContextProvider({
         updateStatus,
         setUpdateStatus,
         newVersion,
+        updateProgress,
+        updateError,
         isUpdateModalOpen,
         setIsUpdateModalOpen,
         isUpdateBannerVisible,
