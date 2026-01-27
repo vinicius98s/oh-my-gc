@@ -25,21 +25,21 @@ const initUpdater = () => {
   autoUpdater.autoDownload = false;
 
   autoUpdater.on("checking-for-update", () => {
-    console.log("Checking for updates...");
+    logToFile("Checking for updates...");
   });
 
   autoUpdater.on("update-available", (info) => {
-    console.log("Update available:", info.version);
+    logToFile(`Update available: ${info.version}`);
     mainWindow?.webContents.send("update-available", info.version);
   });
 
   autoUpdater.on("update-not-available", () => {
-    console.log("Update not available.");
+    logToFile("Update not available.");
     mainWindow?.webContents.send("update-not-available");
   });
 
   autoUpdater.on("error", (err) => {
-    console.error("Updater error:", err);
+    logToFile(`Updater error: ${err.message}`);
     mainWindow?.webContents.send("updater-error", err.message);
   });
 
@@ -48,9 +48,16 @@ const initUpdater = () => {
   });
 
   autoUpdater.on("update-downloaded", () => {
-    console.log("Update downloaded.");
+    logToFile("Update downloaded.");
     mainWindow?.webContents.send("update-downloaded");
   });
+
+  autoUpdater.logger = {
+    info: (m) => logToFile(`INFO: ${m}`),
+    warn: (m) => logToFile(`WARN: ${m}`),
+    error: (m) => logToFile(`ERROR: ${m}`),
+    debug: (m) => logToFile(`DEBUG: ${m}`),
+  };
 
   autoUpdater.checkForUpdatesAndNotify();
 };
@@ -114,6 +121,16 @@ let tray: Tray | undefined;
 let isQuitting = false;
 
 const SETTINGS_PATH = path.join(app.getPath("userData"), "settings.json");
+const LOG_PATH = path.join(app.getPath("userData"), "backend.log");
+
+const logToFile = (message: string) => {
+  try {
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(LOG_PATH, `[${timestamp}] [Updater] ${message}\n`);
+  } catch (err) {
+    console.error("Failed to write to log file", err);
+  }
+};
 
 function getSettings() {
   try {
