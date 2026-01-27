@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "package.json"
+      - ".github/workflows/release.yml"
 
 jobs:
   release:
@@ -27,10 +28,10 @@ jobs:
           $curr_version = Get-Content package.json | ConvertFrom-Json | Select-Object -ExpandProperty version
           if ($prev_version -ne $curr_version) {
             Write-Host "Version changed from $prev_version to $curr_version"
-            echo "changed=true" >> $GITHUB_OUTPUT
+            "changed=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           } else {
             Write-Host "Version unchanged ($curr_version)"
-            echo "changed=false" >> $GITHUB_OUTPUT
+            "changed=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           }
 
       - name: Setup Node.js

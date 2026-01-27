@@ -505,3 +505,200 @@ def get_recommendation(DB, character_id, dungeon_id):
     except Exception as e:
         print(f"Error in get_recommendation: {e}")
         return json.dumps({"data": {"recommendation": None, "isAllDone": False}})
+
+
+def get_inventory(DB):
+    try:
+        cursor = DB.cursor()
+        
+        # Get all items and their stacks with owners
+        query = """
+            SELECT i.id as item_id, i.name, s.quantity, s.id as stack_id, 
+                   GROUP_CONCAT(COALESCE(c.id, 'Shared')) as owners,
+                   i.is_sharable
+            FROM inventory_stacks s
+            JOIN items i ON s.item_id = i.id
+            JOIN inventory_ownership o ON s.id = o.stack_id
+            LEFT JOIN characters c ON o.character_id = c.id
+            GROUP BY s.id
+            ORDER BY i.id
+        """
+        rows = cursor.execute(query).fetchall()
+
+        inventory = []
+        for row in rows:
+            inventory.append({
+                "itemId": row[0],
+                "name": row[1],
+                "quantity": row[2],
+                "stackId": row[3],
+                "owners": row[4],
+                "isSharable": bool(row[5])
+            })
+            
+        return json.dumps({"data": inventory})
+    except Exception as e:
+        print(f"Error in get_inventory: {e}")
+        return None
+
+def update_inventory_item(DB, payload):
+    try:
+        cursor = DB.cursor()
+        stack_id = payload.get("stackId")
+        new_quantity = payload.get("quantity")
+        target_character_id = payload.get("characterId", "KEEP_CURRENT")
+
+        if stack_id is None:
+            return None
+
+        # 1. Get current info
+        cursor.execute("""
+            SELECT s.item_id, s.quantity, i.is_sharable 
+            FROM inventory_stacks s
+            JOIN items i ON s.item_id = i.id
+            WHERE s.id = ?
+        """, (stack_id,))
+        res = cursor.fetchone()
+        if not res:
+            return None
+        item_id, current_qty, is_sharable = res
+
+        # 2. Determine final quantity to transfer/keep
+        final_qty = max(0, new_quantity if new_quantity is not None else current_qty)
+
+        # 3. Handle Move (e.g., to Warehouse)
+        if target_character_id != "KEEP_CURRENT":
+            # Enforcement: cannot move to warehouse (NULL) if not sharable
+            if not is_sharable and target_character_id is None:
+                return json.dumps({"error": "ITEM_NOT_SHARABLE"})
+
+            # Remove the original rows entirely as requested
+            cursor.execute("DELETE FROM inventory_ownership WHERE stack_id = ?", (stack_id,))
+            cursor.execute("DELETE FROM inventory_stacks WHERE id = ?", (stack_id,))
+
+            # Check for an existing stack with the same item and target owner (Warehouse if None)
+            if target_character_id is None:
+                cursor.execute("""
+                    SELECT s.id FROM inventory_stacks s
+                    JOIN inventory_ownership o ON s.id = o.stack_id
+                    WHERE s.item_id = ? AND o.character_id IS NULL
+                """, (item_id,))
+            else:
+                cursor.execute("""
+                    SELECT s.id FROM inventory_stacks s
+                    JOIN inventory_ownership o ON s.id = o.stack_id
+                    WHERE s.item_id = ? AND o.character_id = ?
+                """, (item_id, target_character_id))
+            
+            duplicate = cursor.fetchone()
+
+            if duplicate:
+                dup_id = duplicate[0]
+                cursor.execute("UPDATE inventory_stacks SET quantity = quantity + ? WHERE id = ?", (final_qty, dup_id))
+            else:
+                cursor.execute("INSERT INTO inventory_stacks (item_id, quantity) VALUES (?, ?)", (item_id, final_qty))
+                new_stack_id = cursor.lastrowid
+                cursor.execute("INSERT INTO inventory_ownership (stack_id, character_id) VALUES (?, ?)", (new_stack_id, target_character_id))
+        else:
+            cursor.execute("UPDATE inventory_stacks SET quantity = ? WHERE id = ?", (final_qty, stack_id))
+
+        DB.commit()
+        return json.dumps({"data": "ok"})
+    except Exception as e:
+        print(f"Error in update_inventory_item: {e}")
+        return None
+
+def grant_inventory_item(DB, character_id, item_id, quantity):
+    try:
+        cursor = DB.cursor()
+        
+        # Check if character already has a stack of this item
+        cursor.execute("""
+            SELECT s.id, s.quantity 
+            FROM inventory_stacks s
+            JOIN inventory_ownership o ON s.id = o.stack_id
+            WHERE s.item_id = ? AND o.character_id = ?
+        """, (item_id, character_id))
+        
+        res = cursor.fetchone()
+        
+        if res:
+            stack_id, current_qty = res
+            cursor.execute("UPDATE inventory_stacks SET quantity = quantity + ? WHERE id = ?", (quantity, stack_id))
+        else:
+            # Create a fresh stack for the character
+            cursor.execute("INSERT INTO inventory_stacks (item_id, quantity) VALUES (?, ?)", (item_id, quantity))
+            new_stack_id = cursor.lastrowid
+            cursor.execute("INSERT INTO inventory_ownership (stack_id, character_id) VALUES (?, ?)", (new_stack_id, character_id))
+            
+        DB.commit()
+        return True
+    except Exception as e:
+        print(f"Error in grant_inventory_item: {e}")
+        return False
+
+def grant_void_rewards(DB, character_id, dungeon_id, floor):
+    """
+    Grants rewards for Void dungeons based on the floor reached.
+    Floor 1: 1 Big, 0 Small
+    Floor 2: 1 Big, 1 Small
+    Floor 3: 2 Big, 2 Small
+    Floor 4: 2 Big, 3 Small
+    """
+    try:
+        # Mapping dungeon_id to (BigFragmentID, SmallFragmentID)
+        mapping = {
+            10: (3, 4), # Void 1
+            11: (5, 6), # Void 2
+            12: (7, 8)  # Void 3
+        }
+        
+        if dungeon_id not in mapping:
+            return False
+            
+        big_id, small_id = mapping[dungeon_id]
+        
+        # Determine quantities
+        big_qty = 0
+        small_qty = 0
+        
+        if floor == 1:
+            big_qty = 1
+            small_qty = 0
+        elif floor == 2:
+            big_qty = 1
+            small_qty = 1
+        elif floor == 3:
+            big_qty = 1
+            small_qty = 2
+        elif floor >= 4:
+            big_qty = 1
+            small_qty = 3
+            
+        if big_qty > 0:
+            grant_inventory_item(DB, character_id, big_id, big_qty)
+        if small_qty > 0:
+            grant_inventory_item(DB, character_id, small_id, small_qty)
+            
+        return True
+    except Exception as e:
+        print(f"Error in grant_void_rewards: {e}")
+        return False
+
+def get_items(DB):
+    try:
+        cursor = DB.cursor()
+        rows = cursor.execute("SELECT id, name, is_sharable FROM items ORDER BY id").fetchall()
+        
+        items = []
+        for row in rows:
+            items.append({
+                "id": row[0],
+                "name": row[1],
+                "isSharable": bool(row[2])
+            })
+            
+        return json.dumps({"data": items})
+    except Exception as e:
+        print(f"Error in get_items: {e}")
+        return None

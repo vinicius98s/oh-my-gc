@@ -53,6 +53,7 @@ def game_loop(args, broadcaster):
     dungeon_entry_id = None
     dungeon_id = None
     last_character_id = None
+    has_penalty = False
     print("[game_loop]: Starting game loop...")
 
     while not shutdown_event.is_set():
@@ -72,17 +73,18 @@ def game_loop(args, broadcaster):
             if img is None:
                 continue
 
-            game_state = GameState(last_character_id, img, DB, broadcaster)
+            game_state = GameState(last_character_id, img, DB, broadcaster, has_penalty)
 
             game_state.match_lobby_character()
             if game_state.character_id is not None:
                 last_character_id = game_state.character_id
+                has_penalty = game_state.has_penalty
 
-            entry = game_state.match_loading_dungeon(last_character_id)
+            entry = game_state.match_loading_dungeon(last_character_id, has_penalty)
             if entry is not None:
                 (dungeon_entry_id, dungeon_id) = entry
 
-            is_completed = game_state.match_completed_dungeon(dungeon_entry_id, dungeon_id)
+            is_completed = game_state.match_ongoing_dungeon(dungeon_entry_id, dungeon_id)
             if is_completed:
                 dungeon_id = None
                 dungeon_entry_id = None
@@ -112,6 +114,7 @@ def run_migrations(args):
 
     with backend.lock():
         backend.apply_migrations(backend.to_apply(migrations))
+
     print("[migrations]: Migrations applied successfully")
 
 

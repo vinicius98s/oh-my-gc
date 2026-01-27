@@ -69,12 +69,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-gray overflow-hidden">
-      <div className="max-w-2xl mx-auto mt-6 w-full pb-4">
-        <h1 className="text-2xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-gray-400 text-sm">Customize your app experience.</p>
-      </div>
-
+    <div className="flex flex-col h-full bg-gray">
       <div className="flex-1 overflow-y-auto p-8">
         <div className="max-w-2xl mx-auto space-y-8">
           <div className="space-y-4">

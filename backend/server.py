@@ -11,7 +11,12 @@ from database import (
     update_tracked_characters,
     update_dungeon_entries,
     get_statistics,
-    get_recommendation
+    get_recommendation,
+    get_recommendation,
+    get_inventory,
+    update_inventory_item,
+    get_items,
+    grant_inventory_item
 )
 
 
@@ -22,6 +27,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         super().end_headers()
 
     def do_OPTIONS(self):
@@ -63,6 +70,47 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         self.send_error(500, "Server Error")
                     else:
                         self.wfile.write(response.encode())
+            except Exception as e:
+                self.send_error(500, f"Server Error: {e}")
+
+        elif self.path == "/inventory":
+            try:
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+
+                args = parse_args()
+                with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
+                    content_len = int(self.headers.get("Content-Length"))
+                    payload = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                    response = update_inventory_item(DB, payload)
+                    if response is None:
+                        self.send_error(500, "Server Error")
+                    else:
+                        self.wfile.write(response.encode())
+            except Exception as e:
+                self.send_error(500, f"Server Error: {e}")
+
+        elif self.path == "/inventory/add":
+            try:
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+
+                args = parse_args()
+                with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
+                    content_len = int(self.headers.get("Content-Length"))
+                    payload = json.loads(self.rfile.read(content_len).decode("utf-8"))
+                    
+                    character_id = payload.get("characterId")
+                    item_id = payload.get("itemId")
+                    quantity = payload.get("quantity", 1)
+                    
+                    success = grant_inventory_item(DB, character_id, item_id, quantity)
+                    if not success:
+                        self.send_error(500, "Server Error")
+                    else:
+                        self.wfile.write(json.dumps({"data": "ok"}).encode())
             except Exception as e:
                 self.send_error(500, f"Server Error: {e}")
 
@@ -180,6 +228,32 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                             actual_dungeon_id = row[0]
 
                 response = get_recommendation(DB, character_id, actual_dungeon_id)
+                if response is None:
+                    self.send_error(500, "Server Error")
+                else:
+                    self.wfile.write(response.encode())
+
+        elif self.path.startswith("/inventory"):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            args = parse_args()
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
+                response = get_inventory(DB)
+                if response is None:
+                    self.send_error(500, "Server Error")
+                else:
+                    self.wfile.write(response.encode())
+
+        elif self.path == "/items":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+
+            args = parse_args()
+            with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
+                response = get_items(DB)
                 if response is None:
                     self.send_error(500, "Server Error")
                 else:

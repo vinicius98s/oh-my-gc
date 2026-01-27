@@ -90,10 +90,6 @@ export default function Statistics() {
   return (
     <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-white mb-2 tracking-tight mb-6">
-          Statistics
-        </h1>
-
         <div className="grid grid-cols-3 gap-4 mb-8">
           {mainStats.map((stat, index) => (
             <div

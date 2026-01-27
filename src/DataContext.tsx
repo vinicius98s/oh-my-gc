@@ -18,6 +18,7 @@ import {
   getStatistics,
   StatisticsData,
 } from "./utils/dungeons";
+import { getInventory, InventoryItem } from "./utils/inventory";
 import Loading from "./components/Loading";
 
 type DataContextType = {
@@ -40,6 +41,7 @@ type DataContextType = {
   setIsUpdateModalOpen: (open: boolean) => void;
   isUpdateBannerVisible: boolean;
   setIsUpdateBannerVisible: (visible: boolean) => void;
+  inventory?: InventoryItem[];
 };
 
 const DataContext = createContext<DataContextType>({
@@ -60,6 +62,7 @@ const DataContext = createContext<DataContextType>({
   setIsUpdateModalOpen: () => {},
   isUpdateBannerVisible: false,
   setIsUpdateBannerVisible: () => {},
+  inventory: [],
 });
 
 export function useDataContext() {
@@ -138,6 +141,12 @@ export function DataContextProvider({
     staleTime: Infinity,
   });
 
+  const { data: inventory } = useQuery<InventoryItem[]>({
+    queryKey: ["inventory"],
+    queryFn: () => getInventory(url),
+    enabled: !!port,
+  });
+
   useEffect(() => {
     if (playingCharacter?.id === recommendation?.recommendation?.id) {
       setRecommendation(null);
@@ -191,6 +200,7 @@ export function DataContextProvider({
             setPlayingDungeonId(null);
             queryClient.invalidateQueries({ queryKey: ["dungeons_entries"] });
             queryClient.invalidateQueries({ queryKey: ["statistics"] });
+            queryClient.invalidateQueries({ queryKey: ["inventory"] });
             break;
         }
       });
@@ -225,6 +235,7 @@ export function DataContextProvider({
         setIsUpdateModalOpen,
         isUpdateBannerVisible,
         setIsUpdateBannerVisible,
+        inventory,
       }}
     >
       {children}
