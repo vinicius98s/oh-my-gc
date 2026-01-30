@@ -202,6 +202,11 @@ export function DataContextProvider({
         }
       });
 
+      evtSource.addEventListener("window_status", (e: MessageEvent) => {
+        const { visible } = JSON.parse(e.data.replaceAll("'", '"'));
+        (window as any).electronAPI.setOverlayVisibility(visible);
+      });
+
       evtSource.addEventListener("dungeons", (e: MessageEvent) => {
         const { type, dungeon_id } = JSON.parse(e.data.replaceAll("'", '"'));
         switch (type) {

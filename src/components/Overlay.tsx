@@ -9,8 +9,6 @@ import { X } from "lucide-react";
 
 import { useDataContext } from "../DataContext";
 import {
-  calculateDungeonsETC,
-  formatETC,
   isDungeonComplete,
   getDungeonProgressText,
   getDungeonImage,
@@ -41,70 +39,21 @@ export default function Overlay() {
     return result;
   }, [recommendedCharacter, characters]);
 
-  const { dayETC } = useMemo(() => {
-    let totalSeconds = 0;
-    let hasUnknown = false;
-    let allFinished = true;
-    let nextCharETC = {
-      totalSeconds: 0,
-      hasMissingData: false,
-      isComplete: true,
-    };
-
-    for (const char of trackedCharacters) {
-      const charScheduleIds = char.schedule?.[today] || [];
-      const charDungeons = charScheduleIds
-        .map((id) => {
-          const d = dungeons.find((d) => d.id === id);
-          if (!d) return null;
-          const entry = dungeonsEntries.find(
-            (e) => e.dungeonId === id && e.characterId === char.id
-          ) || { entriesCount: 0, avgTime: null as number | null };
-          return {
-            ...d,
-            entriesCount: entry.entriesCount,
-            avgTime: entry.avgTime,
-          } as any;
-        })
-        .filter((d) => !!d);
-
-      const etc = calculateDungeonsETC(charDungeons);
-
-      // Calculate ETC for next character
-      if (nextCharacter && char.id === nextCharacter.id) {
-        nextCharETC = etc;
-      }
-
-      totalSeconds += etc.totalSeconds;
-      if (etc.hasMissingData) hasUnknown = true;
-      if (!etc.isComplete) allFinished = false;
-    }
-
-    return {
-      dayETC: {
-        totalSeconds,
-        hasMissingData: hasUnknown,
-        isComplete: allFinished,
-      },
-      nextCharacterETC: nextCharETC,
-    };
-  }, [trackedCharacters, today, dungeons, dungeonsEntries, nextCharacter]);
-
   // Calculate current character ETC
-  const { currentCharDungeons, currentCharacterETC } = useMemo(() => {
+  const { currentCharDungeons } = useMemo(() => {
     if (!playingCharacter) {
-      return { currentCharDungeons: [], currentCharacterETC: null };
+      return { currentCharDungeons: [] };
     }
     const trackedChar = trackedCharacters.find(
-      (tc) => tc.id === playingCharacter.id
+      (tc) => tc.id === playingCharacter.id,
     );
     const currentCharScheduleIds = trackedChar?.schedule?.[today] || [];
-    const dungeons_list = currentCharScheduleIds
+    const currentCharDungeons = currentCharScheduleIds
       .map((id: number) => {
         const d = dungeons.find((d) => d.id === id);
         if (!d) return null;
         const entry = dungeonsEntries.find(
-          (e) => e.dungeonId === id && e.characterId === playingCharacter.id
+          (e) => e.dungeonId === id && e.characterId === playingCharacter.id,
         ) || { entriesCount: 0, avgTime: null as number | null };
         return {
           ...d,
@@ -115,10 +64,7 @@ export default function Overlay() {
       })
       .filter((d): d is NonNullable<typeof d> => !!d);
 
-    return {
-      currentCharDungeons: dungeons_list,
-      currentCharacterETC: calculateDungeonsETC(dungeons_list),
-    };
+    return { currentCharDungeons };
   }, [playingCharacter, trackedCharacters, today, dungeons, dungeonsEntries]);
 
   useLayoutEffect(() => {
@@ -153,12 +99,15 @@ export default function Overlay() {
           className="h-fit w-full bg-gray/80 backdrop-blur-sm border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-white relative select-none overflow-hidden group"
         >
           <button
-            onClick={() => (window as any).electron.toggleOverlay()}
+            onClick={() => window.electron.toggleOverlay()}
             className="absolute top-1 right-1 p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all no-drag z-50 opacity-100"
           >
             <X size={10} />
           </button>
-          <div className="flex items-center gap-3 pr-2">
+          <div
+            onDoubleClick={() => window.electron.showMainWindow()}
+            className="flex items-center gap-3 pr-2 no-drag cursor-pointer"
+          >
             <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-lg shadow-inner border border-white/5 flex-shrink-0">
               <span>🎮</span>
             </div>
@@ -195,7 +144,7 @@ export default function Overlay() {
         className="h-fit w-full bg-gray/80 backdrop-blur-sm border border-white/10 rounded-lg p-3 flex flex-col gap-2 text-white relative overflow-hidden select-none group"
       >
         <button
-          onClick={() => (window as any).electron.toggleOverlay()}
+          onClick={() => window.electron.toggleOverlay()}
           className="absolute top-1 right-1 p-1 text-white/80 hover:text-white hover:bg-white/10 rounded-full transition-all no-drag z-50 opacity-100"
         >
           <X size={10} />
@@ -209,7 +158,10 @@ export default function Overlay() {
         />
 
         <div className="flex items-center gap-3 relative z-10">
-          <div className="relative flex-shrink-0">
+          <div
+            className="relative flex-shrink-0 no-drag cursor-pointer"
+            onDoubleClick={() => window.electron.showMainWindow()}
+          >
             <div
               className="absolute -inset-1 rounded-full opacity-50 blur-sm"
               style={{
@@ -238,62 +190,17 @@ export default function Overlay() {
             </h2>
             {dungeon && (
               <p className="text-[10px] text-purple-300 font-medium truncate leading-tight flex items-center gap-1">
-                <span className="size-1 rounded-full bg-purple-400/50" />
                 {dungeon.displayName}
               </p>
             )}
           </div>
 
-          <div className="pr-2">
+          <div className="pr-4">
             <RecommendedNext
               nextCharacter={nextCharacter}
               isAllDone={recommendedCharacter?.isAllDone}
               variant="compact"
             />
-          </div>
-        </div>
-
-        <div className="h-[1px] bg-white/10 relative z-10" />
-
-        <div className="flex-1 flex gap-3 relative z-10 text-[9px] items-center justify-center">
-          <div className="flex flex-col text-center">
-            <span className="text-gray-400 uppercase font-bold leading-tight">
-              Character ETC
-            </span>
-            <span className="text-white font-bold text-[11px]">
-              {currentCharacterETC?.isComplete ? (
-                <span className="text-light-blue uppercase font-bold">
-                  Done
-                </span>
-              ) : (
-                <>
-                  {formatETC(currentCharacterETC?.totalSeconds || 0)}
-                  {currentCharacterETC?.hasMissingData && (
-                    <span className="text-gray-500 text-[9px]">(+)</span>
-                  )}
-                </>
-              )}
-            </span>
-          </div>
-          <div className="self-stretch w-[1px] bg-white/10" />
-          <div className="flex flex-col text-center">
-            <span className="text-gray-400 uppercase font-bold leading-tight">
-              Today ETC
-            </span>
-            <span className="text-white font-bold text-[11px]">
-              {dayETC.isComplete ? (
-                <span className="text-light-blue uppercase font-bold">
-                  Done
-                </span>
-              ) : (
-                <>
-                  {formatETC(dayETC.totalSeconds)}
-                  {dayETC.hasMissingData && (
-                    <span className="text-gray-500 text-[9px]">(+)</span>
-                  )}
-                </>
-              )}
-            </span>
           </div>
         </div>
 
@@ -313,7 +220,7 @@ export default function Overlay() {
             strokeLinejoin="round"
             className={cn(
               "text-gray-400 transition-transform duration-200",
-              isExpanded ? "rotate-180" : ""
+              isExpanded ? "rotate-180" : "",
             )}
           >
             <path d="m6 9 6 6 6-6" />

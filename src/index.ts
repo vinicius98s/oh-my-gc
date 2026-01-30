@@ -305,6 +305,14 @@ const createWindow = async () => {
     }
   });
 
+  ipcMain.on("set-overlay-visibility", (_, visible: boolean) => {
+    if (visible) {
+      overlayWindow?.show();
+    } else {
+      overlayWindow?.hide();
+    }
+  });
+
   ipcMain.on("minimize-window", () => {
     mainWindow?.minimize();
   });
@@ -316,6 +324,11 @@ const createWindow = async () => {
     } else {
       mainWindow?.hide();
     }
+  });
+
+  ipcMain.on("show-main-window", () => {
+    mainWindow?.show();
+    mainWindow?.focus();
   });
 
   mainWindow.on("close", (event) => {
@@ -398,6 +411,7 @@ const createOverlayWindow = () => {
     x: settings.overlayX ?? defaultX,
     y: settings.overlayY ?? defaultY,
     frame: false,
+    show: false,
     transparent: true,
     alwaysOnTop: true,
     resizable: false,

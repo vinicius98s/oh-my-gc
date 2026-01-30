@@ -30,6 +30,7 @@ declare global {
       onUpdateProgress: (callback: (percent: number) => void) => void;
       downloadUpdate: () => void;
       installUpdate: () => void;
+      showMainWindow: () => void;
       onOverlaySettingChanged: (
         callback: (value: boolean) => void,
       ) => () => void;

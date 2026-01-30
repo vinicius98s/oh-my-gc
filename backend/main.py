@@ -54,6 +54,7 @@ def game_loop(args, broadcaster):
     dungeon_id = None
     last_character_id = None
     has_penalty = False
+    last_window_status = None
     print("[game_loop]: Starting game loop...")
 
     while not shutdown_event.is_set():
@@ -62,11 +63,23 @@ def game_loop(args, broadcaster):
 
         with sqlite3.connect(f"{args.user_data}/oh-my-gc.sqlite3") as DB:
             window = game.get_window()
-            if window is None:
-                print("[game_loop]: Game window not found")
-                continue
+            
+            # Visibility logic: Window exists, is not minimized, and is active (focused)
+            is_visible = False
+            if window is not None:
+                try:
+                    is_visible = not window.isMinimized and window.isActive
+                except Exception:
+                    is_visible = False
 
-            if window.isMinimized:
+            if is_visible != last_window_status:
+                broadcaster.broadcast(
+                    event="window_status",
+                    data={"visible": is_visible}
+                )
+                last_window_status = is_visible
+
+            if not is_visible:
                 continue
 
             img = game.take_screenshot(window, f"{args.user_data}/screenshot.png")

@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setIgnoreMouseEvents: (ignore: boolean, options?: { forward: boolean }) =>
     ipcRenderer.send("set-ignore-mouse-events", ignore, options),
   resizeOverlay: (height: number) => ipcRenderer.send("resize-overlay", height),
+  setOverlayVisibility: (visible: boolean) =>
+    ipcRenderer.send("set-overlay-visibility", visible),
 });
 
 contextBridge.exposeInMainWorld("electron", {
@@ -36,6 +38,7 @@ contextBridge.exposeInMainWorld("electron", {
   setShowOverlay: (value: boolean) =>
     ipcRenderer.send("set-show-overlay", value),
   toggleOverlay: () => ipcRenderer.send("toggle-overlay"),
+  showMainWindow: () => ipcRenderer.send("show-main-window"),
   onOverlaySettingChanged: (callback: (value: boolean) => void) => {
     const subscription = (_event: any, value: boolean) => callback(value);
     ipcRenderer.on("overlay-setting-changed", subscription);
